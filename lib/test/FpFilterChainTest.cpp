@@ -28,8 +28,6 @@
 #include <sstream>
 #include <vector>
 
-using temp_t = safe_elastic_fixed_point<11, 12, int32_t>;
-
 SCENARIO("Fixed point filterchain using temp_t")
 {
     std::vector<std::vector<uint8_t>> chainsSpecs = {{0},
@@ -103,7 +101,7 @@ SCENARIO("Fixed point filterchain using temp_t")
             };
 
         auto findGainAtPeriod = [&sine](FpFilterChain<temp_t>& c, const uint32_t& period, bool checkMaxDerivative = true) {
-            using derivative_t = safe_elastic_fixed_point<1, 23, int32_t>;
+            using derivative_t = saturated_elastic_fixed_point<1, 23, int32_t>;
             const temp_t amplIn = 10;
             temp_t max = 0;
             derivative_t maxDerivative = 0;

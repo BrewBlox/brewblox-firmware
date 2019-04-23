@@ -20,14 +20,15 @@
 #include <catch.hpp>
 
 #include "FixedPoint.h"
+
 #include <boost/core/demangle.hpp>
 #include <cstdint>
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = safe_elastic_fixed_point<7, 8, int16_t>;
-using temp_precise_t = safe_elastic_fixed_point<7, 23, int32_t>;
-using temp_wide_t = safe_elastic_fixed_point<23, 8, int32_t>;
+using temp_t = saturated_elastic_fixed_point<7, 8, int16_t>;
+using temp_precise_t = saturated_elastic_fixed_point<7, 23, int32_t>;
+using temp_wide_t = saturated_elastic_fixed_point<23, 8, int32_t>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
@@ -65,6 +66,24 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(tl0 == tl1);
     }
 
+    WHEN("conversion_to_small_precision")
+    {
+        // non-clipping/non-overflowing conversion
+        temp_wide_t tw = 0.5;
+        temp_t t = tw;
+        CHECK(t == temp_t(0.5));
+
+        // clipping conversion should be constrained to min/max
+        tw = -150;
+        t = tw;
+
+        CHECK(t == cnl::numeric_limits<temp_t>::lowest());
+
+        tw = 150;
+        t = tw;
+        CHECK(t == cnl::numeric_limits<temp_t>::max());
+    }
+
     WHEN("conversion_from_long_to_normal_temp")
     {
         // non-clipping/non-overflowing conversion
@@ -83,6 +102,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         t = tl;
         CHECK(t == cnl::numeric_limits<temp_t>::max());
     }
+
     WHEN("conversion_from_normal_to_precise")
     {
         // normal variable to convert from
@@ -201,6 +221,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t4 == temp_precise_t(9.0));
         CHECK(t5 == temp_wide_t(9.0));
         CHECK(t6 == cnl::numeric_limits<temp_precise_t>::max());
+
         CHECK(t7 == temp_wide_t(300.0));
     }
 
@@ -242,6 +263,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
         CHECK(t3 == temp_t(6.0));
         CHECK(t4 == temp_t(6.0));
+
         CHECK(t5 == temp_precise_t(6.0));
     }
 
@@ -375,7 +397,6 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
         CHECK(a == -(-a));
     }
-
     WHEN("multiplication_by_uint16")
     {
         temp_t a = 2.0;
@@ -404,7 +425,6 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         // That's why the result below is 0.933594 instead of 0.9375
         CHECK(temp_wide_t(temp_precise_t(0.0156109333) * uint16_t(60)) == Approx(0.933594));
     }
-
     WHEN("right_shift")
     {
         temp_t t = 8.0;
@@ -481,6 +501,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
             INFO(d);
             INFO(t);
+            INFO(cnl::unwrap(t));
             s.erase(s.find('.') + 3, std::string::npos);
             REQUIRE(to_string_dec(t, 2) == s);
         }

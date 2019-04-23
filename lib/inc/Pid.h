@@ -29,8 +29,8 @@ class Pid {
 public:
     using in_t = fp12_t;
     using out_t = fp12_t;
-    using integral_t = safe_elastic_fixed_point<19, 12, int32_t>;
-    using derivative_t = safe_elastic_fixed_point<1, 23, int32_t>;
+    using integral_t = saturated_elastic_fixed_point<19, 12, int32_t>;
+    using derivative_t = saturated_elastic_fixed_point<1, 23, int32_t>;
 
 private:
     const std::function<std::shared_ptr<ProcessValue<in_t>>()> m_inputPtr;
@@ -123,7 +123,7 @@ public:
     {
         if (m_ti != 0) {
             // scale integral history so integral action doesn't change
-            m_integral = (m_integral * arg) / m_ti;
+            m_integral = m_integral * integral_t(cnl::fraction<>(arg, m_ti));
         }
         m_ti = arg;
     }

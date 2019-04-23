@@ -31,7 +31,7 @@ def lookup_function(val):
     return None
 
 class FixedPointPrinter:
-    "Pretty Printer for safe_elastic_fixed_point"
+    "Pretty Printer for saturated_elastic_fixed_point"
 
     def __init__(self, val):
         self.val = val

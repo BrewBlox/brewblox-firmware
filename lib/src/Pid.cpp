@@ -54,7 +54,7 @@ Pid::update()
 
     if (m_ti != 0) {
         m_integral += m_error;
-        m_i = (m_integral * m_kp) / m_ti;
+        m_i = (m_integral * m_kp) / integral_t::rep(m_ti);
     } else {
         m_integral = 0;
         m_ti = 0;
@@ -89,6 +89,7 @@ Pid::update()
                             // calculate anti-windup from setting instead of actual value, so it doesn't dip under the maximum
                             // make sure anti-windup is at least m_error when clipping to prevent further windup, with extra anti-windup to scale back integral
                             antiWindup = m_error + fp12_t(3 * (pidResult - outputSetting)) / m_kp; // anti windup gain is 3
+
                         } else {
                             // Actuator could be not reaching set value due to physics or limits in its target actuator
                             // Get the actual achieved value in actuator. This could differ due to slowness time/mutex limits

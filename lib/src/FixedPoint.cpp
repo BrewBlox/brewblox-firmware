@@ -23,34 +23,36 @@
 #include <cstring>
 #include <stdlib.h>
 
+constexpr uint32_t
+pow10(int e)
+{
+    uint32_t r = 10;
+    while (e--) {
+        r *= 10;
+    }
+
+    return r;
+}
+
 std::string
 to_string_dec(const fp12_t& t, uint8_t decimals)
 {
-    // shift to right number of digits
-    auto shifted = t;
-    for (uint8_t i = decimals; i > 0; --i) {
-        shifted = shifted * 10;
+    static constexpr fp12_t rounders[5] = {cnl::fraction<>(1, 2),
+                                           cnl::fraction<>(1, 20),
+                                           cnl::fraction<>(1, 200),
+                                           cnl::fraction<>(1, 2000),
+                                           cnl::fraction<>(1, 20000)};
+
+    if (decimals > 4) {
+        decimals = 4;
     }
 
-    // ensure correct rounding
-    auto rounder = fp12_t(0.5);
-    shifted = t >= fp12_t(0) ? shifted + rounder : shifted - rounder;
+    auto rounder = (t >= 0) ? rounders[decimals] : -rounders[decimals];
 
-    // convert to int
-    auto intValue = int32_t(shifted);
+    std::string result = cnl::to_chars(t + rounder).data();
 
-    // convert to string
-    auto s = std::string();
-    s = s << intValue;
+    // trim digits after requested precision
+    result.erase(result.find('.') + decimals + 1, std::string::npos);
 
-    // prefix zeros for values smaller than 1
-    uint8_t insertPos = (intValue < 0) ? 1 : 0; // handle minus sign
-    uint8_t minChars = decimals + insertPos + 1;
-    if (minChars > s.size()) {
-        s.insert(insertPos, minChars - s.size(), '0');
-    }
-
-    // insert decimal point
-    s.insert(s.end() - decimals, '.');
-    return s;
+    return result;
 }

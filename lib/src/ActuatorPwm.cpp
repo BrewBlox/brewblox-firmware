@@ -202,7 +202,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         if (twoPeriodTotalTime == 0) {
             m_dutyAchieved = 0;
         } else {
-            auto dutyAchieved = (value_t(100) * twoPeriodHighTime) / twoPeriodTotalTime;
+            auto dutyAchieved = (value_t(100) * value_t::rep(twoPeriodHighTime)) / value_t::rep(twoPeriodTotalTime);
             if (wait == 0) {
                 // end of high or low time
                 m_dutyAchieved = dutyAchieved;
