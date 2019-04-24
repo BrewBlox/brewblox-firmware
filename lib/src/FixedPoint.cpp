@@ -48,11 +48,18 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
     }
 
     auto rounder = (t >= 0) ? rounders[decimals] : -rounders[decimals];
+    auto rounded = t + rounder;
 
-    std::string result = cnl::to_chars(t + rounder).data();
+    auto digits = decimals + ((rounded < 0) ? 3 : 2);
+    auto temporary = abs(rounded);
+    while (temporary >= decltype(temporary)(10)) {
+        temporary = temporary / 10;
+        ++digits;
+    }
 
-    // trim digits after requested precision
-    result.erase(result.find('.') + decimals + 1, std::string::npos);
+    char buf[16] = {0};
 
-    return result;
+    cnl::to_chars(buf, buf + digits, rounded);
+
+    return std::string(buf);
 }

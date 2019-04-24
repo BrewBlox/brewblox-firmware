@@ -89,9 +89,9 @@ public:
                 auto segmentElapsed = elapsed - lower->time;
                 auto segmentDuration = upper->time - lower->time;
 
-                temp_t fraction = cnl::fraction<>(segmentElapsed, segmentDuration);
+                temp_t fraction = ((upper->temp - lower->temp) * segmentElapsed) / segmentDuration;
 
-                auto interpolated = lower->temp + fraction * (upper->temp - lower->temp);
+                auto interpolated = lower->temp + fraction;
                 newTemp = interpolated;
             } else {
                 return;

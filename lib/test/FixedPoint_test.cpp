@@ -22,13 +22,12 @@
 #include "FixedPoint.h"
 
 #include <boost/core/demangle.hpp>
-#include <cstdint>
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = saturated_elastic_fixed_point<7, 8, int16_t>;
-using temp_precise_t = saturated_elastic_fixed_point<7, 23, int32_t>;
-using temp_wide_t = saturated_elastic_fixed_point<23, 8, int32_t>;
+using temp_t = saturated_elastic_fixed_point<7, 8, std::int32_t>; // change back to int16_t after compile errors in cnl are fixed
+using temp_precise_t = saturated_elastic_fixed_point<7, 23, std::int32_t>;
+using temp_wide_t = saturated_elastic_fixed_point<23, 8, std::int32_t>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
@@ -49,7 +48,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("Size is as small as a normal raw integer")
     {
-        CHECK(sizeof(temp_t) == 2);
+        CHECK(sizeof(temp_t) == 4);
         CHECK(sizeof(temp_precise_t) == 4);
         CHECK(sizeof(temp_wide_t) == 4);
     }
@@ -484,24 +483,24 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(to_string_dec(temp_t(-10.06), 1) == "-10.1");
         CHECK(to_string_dec(temp_t(-10.01499), 2) == "-10.01");
         CHECK(to_string_dec(temp_t(-10.054), 2) == "-10.05");
+
         CHECK(to_string_dec(temp_t(0), 2) == "0.00");
-        CHECK(to_string_dec(temp_t(0.01), 2) == "0.01");
-        CHECK(to_string_dec(temp_t(-0.01), 2) == "-0.01");
+        CHECK(to_string_dec(temp_t(0.02), 2) == "0.02");
+        CHECK(to_string_dec(temp_t(-0.02), 2) == "-0.02");
 
         auto bit = cnl::wrap<temp_t>(1);
         for (auto t = temp_t(-11); t < temp_t(11); t += bit) {
-            auto rounder = (t >= temp_t(0)) ? double(0.005) : -double(0.005);
-            double d = double(t);
+            auto rounder = (t >= temp_t(0)) ? fp12_t(0.005) : fp12_t(-0.005); // use fp12_t to account for rounding precision in to_string_dec
+            double d = double(t + rounder);
             if (d > -0.00499999 && d < 0.0) {
-                d = 0.0; // we don't use -0.00 for
-            } else {
-                d += rounder;
+                d = 0.0; // we don't use -0.00
             }
             auto s = std::to_string(d);
 
             INFO(d);
             INFO(t);
-            INFO(cnl::unwrap(t));
+            INFO(cnl::unwrap(t))
+            INFO(s);
             s.erase(s.find('.') + 3, std::string::npos);
             REQUIRE(to_string_dec(t, 2) == s);
         }
