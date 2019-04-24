@@ -490,9 +490,9 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
         auto bit = cnl::wrap<temp_t>(1);
         for (auto t = temp_t(-11); t < temp_t(11); t += bit) {
-            auto rounder = (t >= temp_t(0)) ? fp12_t(0.005) : fp12_t(-0.005); // use fp12_t to account for rounding precision in to_string_dec
+            auto rounder = (t >= temp_t(0)) ? 0.005 : -0.005;
             double d = double(t + rounder);
-            if (d > -0.00499999 && d < 0.0) {
+            if (t > -0.00499999 && t <= 0.0) {
                 d = 0.0; // we don't use -0.00
             }
             auto s = std::to_string(d);

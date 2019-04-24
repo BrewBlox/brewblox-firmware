@@ -26,7 +26,7 @@
 constexpr uint32_t
 pow10(uint8_t e)
 {
-    uint32_t r = 10;
+    uint32_t r = 1;
     while (e--) {
         r *= 10;
     }
