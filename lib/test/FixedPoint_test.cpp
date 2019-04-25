@@ -25,7 +25,7 @@
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = saturated_elastic_fixed_point<7, 8, std::int32_t>; // change back to int16_t after compile errors in cnl are fixed
+using temp_t = saturated_elastic_fixed_point<7, 8, std::int16_t>;
 using temp_precise_t = saturated_elastic_fixed_point<7, 23, std::int32_t>;
 using temp_wide_t = saturated_elastic_fixed_point<23, 8, std::int32_t>;
 
@@ -48,7 +48,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("Size is as small as a normal raw integer")
     {
-        CHECK(sizeof(temp_t) == 4);
+        CHECK(sizeof(temp_t) == 2);
         CHECK(sizeof(temp_precise_t) == 4);
         CHECK(sizeof(temp_wide_t) == 4);
     }
