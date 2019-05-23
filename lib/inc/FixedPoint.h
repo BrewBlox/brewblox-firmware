@@ -1,22 +1,22 @@
 #pragma once
 
 // workaround for std::to_string not being available on arm
-
 #include <sstream>
 namespace std {
-
 template <typename T>
-std::string
+string
 to_string(const T& n)
 {
-    std::ostringstream s;
+    ostringstream s;
     s << n;
     return s.str();
 }
 }
 
+#include "../cnl/include/cnl/elastic_integer.h"
+#include "../cnl/include/cnl/fixed_point.h"
 #include "../cnl/include/cnl/num_traits.h"
-#include "../cnl/include/cnl/static_number.h"
+#include "../cnl/include/cnl/overflow_integer.h"
 
 #include <cstdint>
 #include <type_traits>

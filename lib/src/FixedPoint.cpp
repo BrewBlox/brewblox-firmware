@@ -35,7 +35,37 @@ pow10(uint8_t e)
 }
 
 std::string
-to_string_dec(const fp12_t& t, uint8_t decimals)
+to_string_dec_cnl(const fp12_t& t, uint8_t decimals)
+{
+    static constexpr fp12_t rounders[5] = {cnl::fraction<>(1, 2),
+                                           cnl::fraction<>(1, 20),
+                                           cnl::fraction<>(1, 200),
+                                           cnl::fraction<>(1, 2000),
+                                           cnl::fraction<>(1, 20000)};
+
+    if (decimals > 4) {
+        decimals = 4;
+    }
+
+    auto rounder = (t >= 0) ? rounders[decimals] : -rounders[decimals];
+    auto rounded = t + rounder;
+
+    auto digits = decimals + ((rounded < 0) ? 3 : 2);
+    auto temporary = abs(rounded);
+    while (temporary >= decltype(temporary)(10)) {
+        temporary = temporary / 10;
+        ++digits;
+    }
+
+    char buf[16] = {0};
+
+    cnl::to_chars(buf, buf + digits, rounded);
+
+    return std::string(buf);
+}
+
+std::string
+to_string_dec_custom(const fp12_t& t, uint8_t decimals)
 {
 
     // shift to right number of digits
@@ -62,4 +92,10 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
     // insert decimal point
     s.insert(s.end() - decimals, '.');
     return s;
+}
+
+std::string
+to_string_dec(const fp12_t& t, uint8_t decimals)
+{
+    return to_string_dec_cnl(t, decimals);
 }
