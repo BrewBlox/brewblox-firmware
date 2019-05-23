@@ -25,8 +25,13 @@ template <
     int IntegerDigits,
     int FractionalDigits,
     class Narrowest>
-using saturated_elastic_fixed_point = cnl::static_number<
-    IntegerDigits + FractionalDigits, -FractionalDigits, cnl::native_rounding_tag, cnl::saturated_overflow_tag, Narrowest>;
+using saturated_elastic_fixed_point = cnl::fixed_point<
+    cnl::overflow_integer<
+        cnl::elastic_integer<
+            IntegerDigits + FractionalDigits,
+            Narrowest>,
+        cnl::saturated_overflow_tag>,
+    -FractionalDigits>;
 
 using fp12_t = saturated_elastic_fixed_point<11, 12, std::int32_t>;
 
