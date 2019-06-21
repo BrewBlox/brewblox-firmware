@@ -61,7 +61,6 @@ Box::noop(DataIn& in, HexCrcDataOut& out)
 {
     in.spool();
     out.writeResponseSeparator();
-    connectionStarted(out);
     out.write(asUint8(CboxError::OK));
 }
 
@@ -588,6 +587,7 @@ Box::handleCommand(DataIn& dataIn, DataOut& dataOut)
 
     switch (cmd_id) {
     case NONE:
+        connectionStarted(dataOut); // insert welcome message annotation
         noop(in, out);
         break;
     case READ_OBJECT:
