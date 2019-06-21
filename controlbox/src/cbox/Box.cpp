@@ -587,6 +587,7 @@ Box::handleCommand(DataIn& dataIn, DataOut& dataOut)
 
     switch (cmd_id) {
     case NONE:
+        connectionStarted(out);
         noop(in, out);
         break;
     case READ_OBJECT:
