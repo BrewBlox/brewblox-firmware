@@ -3,7 +3,7 @@
 CCC = gcc
 CXX = g++
 LD = g++
-CFLAGS = -g
+CFLAGS = -g -Wfatal-errors
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS)
 RM = rm -f

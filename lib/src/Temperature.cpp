@@ -17,7 +17,7 @@
  * along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Temperature.h"
+#include "../inc/Temperature.h"
 
 std::string
 tempDiff_to_string(const temp_t& t, uint8_t decimals, const TempUnit& unit)
@@ -34,7 +34,7 @@ temp_to_string(const temp_t& t, uint8_t decimals, const TempUnit& unit)
 {
     fp12_t val = t;
     if (unit == TempUnit::Fahrenheit) {
-        val = (t * 9) / 5 + fp12_t(32);
+        val = fp12_t((t * 9) / 5) + fp12_t(32);
     }
     return to_string_dec(val, decimals);
 }

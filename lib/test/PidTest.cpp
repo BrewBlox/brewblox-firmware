@@ -130,7 +130,7 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         fp12_t mockVal;
         double accumulatedError = 0;
         for (int32_t i = 0; i <= 900; ++i) {
-            mockVal = fp12_t(20) + (fp12_t(9) * i) / 900;
+            mockVal = fp12_t(20.0 + 9.0 * i / 900);
             sensor->value(mockVal);
             input->update();
             pid.update();
@@ -160,7 +160,7 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         fp12_t mockVal;
         double accumulatedError = 0;
         for (int32_t i = 0; i <= 900; ++i) {
-            mockVal = fp12_t(30) - (fp12_t(9) * i) / 900;
+            mockVal = fp12_t(30.0 - (9.0 * i) / 900);
             sensor->value(mockVal);
             input->update();
             pid.update();

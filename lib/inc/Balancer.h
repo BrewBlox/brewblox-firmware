@@ -104,7 +104,7 @@ public:
 
     void update()
     {
-        auto numActuators = requesters.size();
+        uint8_t numActuators = requesters.size();
         if (numActuators == 0) {
             return;
         }
@@ -118,10 +118,9 @@ public:
             budgetLeft = available - requestedTotal;
             requestedTotal = available;
         }
-        auto budgetLeftPerActuator = budgetLeft / numActuators;
+        auto budgetLeftPerActuator = cnl::quotient(budgetLeft, numActuators);
 
-        safe_elastic_fixed_point<10, 21, int32_t>
-            scale = cnl::quotient<safe_elastic_fixed_point<21, 21, int64_t>>(available, requestedTotal);
+        safe_elastic_fixed_point<31, -21> scale = cnl::quotient(available, requestedTotal);
 
         for (auto& a : requesters) {
             a.granted = a.requested * scale;

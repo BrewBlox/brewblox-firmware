@@ -92,8 +92,8 @@ public:
     U readDerivative(uint8_t idx) const
     {
         auto derivative = chain.readDerivative(idx);
-        uint8_t destFractionBits = -U::exponent;
-        uint8_t filterFactionBits = -T::exponent + derivative.fractionBits;
+        uint8_t destFractionBits = -U::scale::exponent;
+        uint8_t filterFactionBits = -T::scale::exponent + derivative.fractionBits;
         int64_t result;
         if (destFractionBits >= filterFactionBits) {
             result = derivative.result << (destFractionBits - filterFactionBits);

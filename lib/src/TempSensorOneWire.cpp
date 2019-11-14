@@ -97,7 +97,7 @@ TempSensorOneWire::readAndConstrainTemp()
     }
 
     // difference in precision between DS18B20 format and temperature format
-    constexpr auto shift = (-temp_t::exponent) - ONEWIRE_TEMP_SENSOR_PRECISION;
+    constexpr auto shift = -temp_t::scale::exponent - ONEWIRE_TEMP_SENSOR_PRECISION;
     temp_t temp = cnl::wrap<temp_t>(tempRaw << shift);
     return temp + m_calibrationOffset;
 }

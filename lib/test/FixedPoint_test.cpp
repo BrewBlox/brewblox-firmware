@@ -19,15 +19,15 @@
 
 #include <catch.hpp>
 
-#include "FixedPoint.h"
+#include "../inc/FixedPoint.h"
 #include <boost/core/demangle.hpp>
 #include <cstdint>
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = safe_elastic_fixed_point<7, 8, int16_t>;
-using temp_precise_t = safe_elastic_fixed_point<7, 23, int32_t>;
-using temp_wide_t = safe_elastic_fixed_point<23, 8, int32_t>;
+using temp_t = safe_elastic_fixed_point<15, -8>;
+using temp_precise_t = safe_elastic_fixed_point<31, -24>;
+using temp_wide_t = safe_elastic_fixed_point<31, -8>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
@@ -48,8 +48,12 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("Size is as small as a normal raw integer")
     {
-        CHECK(sizeof(temp_t) == 2);
+        CHECK(sizeof(temp_t) == 4); // smallest is 32 bit
+        auto result1 = temp_t(10) * temp_t(10);
+        CHECK(sizeof(result1) == 4); // but result is still 32 bit, because number of bits was set to 15.
         CHECK(sizeof(temp_precise_t) == 4);
+        auto result2 = temp_precise_t(10) * temp_precise_t(10);
+        CHECK(sizeof(result2) == 8); // type has widened here
         CHECK(sizeof(temp_wide_t) == 4);
     }
 

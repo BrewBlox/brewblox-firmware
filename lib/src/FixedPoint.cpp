@@ -27,9 +27,9 @@ std::string
 to_string_dec(const fp12_t& t, uint8_t decimals)
 {
     // shift to right number of digits
-    auto shifted = t;
+    fp12_t shifted = t;
     for (uint8_t i = decimals; i > 0; --i) {
-        shifted = shifted * 10;
+        shifted = shifted * int8_t(10);
     }
 
     // ensure correct rounding
