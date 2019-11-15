@@ -3,7 +3,6 @@
  *
  */
 #include "../inc/IirFilter.h"
-
 #include <stdlib.h>
 
 IirFilter::IirFilter(const uint8_t& idx, const int32_t& threshold)
@@ -109,7 +108,11 @@ IirFilter::shift(const int64_t val) const
 int64_t
 IirFilter::shift(const int64_t val, uint8_t shift) const
 {
-    return val << shift;
+    // prevent left shift of negative number, which is undefined behavior
+    uint64_t sign_mask = (uint64_t(1) << 63);
+    int64_t sign = val & sign_mask;
+    uint64_t abs = val & ~sign_mask;
+    return int64_t(abs << shift) | sign;
 }
 int64_t
 IirFilter::unshift(const int64_t val) const
