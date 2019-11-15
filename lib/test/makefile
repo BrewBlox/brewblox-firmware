@@ -19,8 +19,6 @@ SOURCE_PATH = $(call remove_slash,$(abspath $(mkfile_dir)/../..))
 
 BUILD_PATH=$(TARGETDIR)test/
 
-include $(SOURCE_PATH)/build/checkers.mk # sanitizer and gcov
-
 # Recursive wildcard function
 rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
@@ -67,6 +65,12 @@ CFLAGS += -pthread
 # compile with coverage
 CFLAGS += -g -fprofile-arcs -ftest-coverage
 LDFLAGS += -lgcov
+
+# compile with coverage and sanitizer (uncommented because cnl doesn't work well with it)
+# include $(SOURCE_PATH)/build/checkers.mk # sanitizer and gcov
+
+# generate map file
+LDFLAGS += -Xlinker -Map=libtest.map 
 
 # don't generate warnings for system headers
 CFLAGS += -Wno-system-headers

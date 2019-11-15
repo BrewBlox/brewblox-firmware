@@ -87,7 +87,7 @@ Pid::update()
                             // clipped to actuator min or max set in target actuator
                             // calculate anti-windup from setting instead of actual value, so it doesn't dip under the maximum
                             // make sure anti-windup is at least m_error when clipping to prevent further windup, with extra anti-windup to scale back integral
-                            antiWindup = m_error + out_t(cnl::quotient(int8_t(3) * (pidResult - outputSetting), m_kp)); // anti windup gain is 3
+                            antiWindup = m_error + out_t(3 * (pidResult - outputSetting) / m_kp); // anti windup gain is 3
                         } else {
                             // Actuator could be not reaching set value due to physics or limits in its target actuator
                             // Get the actual achieved value in actuator. This could differ due to slowness time/mutex limits
