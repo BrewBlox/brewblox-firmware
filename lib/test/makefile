@@ -3,7 +3,6 @@
 CCC = gcc
 CXX = g++
 LD = g++
-CFLAGS = -g -Wfatal-errors
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS)
 RM = rm -f
@@ -19,6 +18,8 @@ remove_slash = $(patsubst %/,%,$1)
 SOURCE_PATH = $(call remove_slash,$(abspath $(mkfile_dir)/../..))
 
 BUILD_PATH=$(TARGETDIR)test/
+
+include $(SOURCE_PATH)/build/checkers.mk # sanitizer and gcov
 
 # Recursive wildcard function
 rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))

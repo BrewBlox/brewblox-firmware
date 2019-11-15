@@ -1,5 +1,5 @@
-# enable coverage for gcc builds
-CFLAGS += -g -O0 -fno-inline
+# enable coverage for gcc builds. use -O1 for cnl
+CFLAGS += -g -O1 -fno-inline
 CFLAGS += --coverage
 
 TEST_BUILD=y
