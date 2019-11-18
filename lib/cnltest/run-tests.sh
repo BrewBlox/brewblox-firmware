@@ -1,0 +1,1 @@
+build/test_runner --durations yes
