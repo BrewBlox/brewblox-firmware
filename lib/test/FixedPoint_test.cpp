@@ -483,8 +483,8 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
             }
             auto s = std::to_string(d);
 
-            INFO(d);
-            INFO(t);
+            // INFO(d);
+            // INFO(t);
             s.erase(s.find('.') + 3, std::string::npos);
             REQUIRE(to_string_dec(t, 2) == s);
         }

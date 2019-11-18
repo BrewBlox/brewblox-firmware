@@ -914,7 +914,7 @@ SCENARIO("PID Test with PWM actuator", "[pid]")
         THEN("A derivative filter is selected so that derivative output is max 30%-150% of proportional gain")
         {
             for (uint16_t td = 20; td < 1200; td = td * 5 / 4) {
-                INFO("td=" + std::to_string(td));
+                // INFO("td=" + std::to_string(td));
 
                 CHECK(testStep(td) >= -150);
                 CHECK(testStep(td) <= -30);

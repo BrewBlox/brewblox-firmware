@@ -38,8 +38,8 @@
 using value_t = ActuatorAnalog::value_t;
 using State = ActuatorDigitalBase::State;
 
+const auto output = decltype(&std::cout)(nullptr);
 // auto output = &std::cout; // uncomment for stdout output
-auto output = std::make_unique<std::ofstream>(); // use unopened file stream for no output
 
 double
 randomIntervalTest(const int& numPeriods,
@@ -55,21 +55,23 @@ randomIntervalTest(const int& numPeriods,
     ticks_millis_t totalHighTime = 0;
     ticks_millis_t totalLowTime = 0;
     ticks_millis_t nextUpdate = now;
-
-    *output << std::endl
-            << std::endl
-            << "*** Results running 100 periods and random 1-"
-            << delayMax << " ms update intervals,"
-            << " with duty cycle " << duty
-            << " and period " << pwm.period()
-            << " ***" << std::endl;
+    if (output) {
+        *output << std::endl
+                << std::endl
+                << "*** Results running 100 periods and random 1-"
+                << delayMax << " ms update intervals,"
+                << " with duty cycle " << duty
+                << " and period " << pwm.period()
+                << " ***" << std::endl;
 
 #if PRINT_TOGGLE_TIMES
-    *output << std::endl
-            << std::endl
-            << "l->h time        h->l time       high time       low time    value   period"
-            << std::endl;
+        *output << std::endl
+                << std::endl
+                << "l->h time        h->l time       high time       low time    value   period"
+                << std::endl;
 #endif
+    }
+
     for (int i = 0; i < numPeriods + 4; i++) {
         do {
             now += 1 + std::rand() % delayMax;
@@ -83,11 +85,13 @@ randomIntervalTest(const int& numPeriods,
             totalHighTime += highTime;
         }
 #if PRINT_TOGGLE_TIMES
-        *output << std::setw(10) << lowToHighTime
-                << "\t"
-                << std::setw(10) << highToLowTime
-                << "\t"
-                << std::setw(10) << highTime;
+        if (output) {
+            *output << std::setw(10) << lowToHighTime
+                    << "\t"
+                    << std::setw(10) << highToLowTime
+                    << "\t"
+                    << std::setw(10) << highTime;
+        }
 #endif
         do {
             now += 1 + std::rand() % delayMax;
@@ -101,20 +105,24 @@ randomIntervalTest(const int& numPeriods,
             totalLowTime += lowTime;
         }
 #if PRINT_TOGGLE_TIMES
-        *output << "\t"
-                << std::setw(10) << lowTime
-                << std::setw(10) << pwm.value()
-                << std::setw(10) << lowTime + highTime
-                << std::endl;
+        if (output) {
+            *output << "\t"
+                    << std::setw(10) << lowTime
+                    << std::setw(10) << pwm.value()
+                    << std::setw(10) << lowTime + highTime
+                    << std::endl;
+        }
 #endif
     }
     double totalTime = totalHighTime + totalLowTime;
     double avgDuty = double(totalHighTime) / (totalHighTime + totalLowTime) * double(100);
-    *output << "total high time: " << totalHighTime << "\n"
-            << "total low time: " << totalLowTime << "\n"
-            << "avg duty: " << avgDuty << "/100\n"
-            << "avg period: " << totalTime / numPeriods << "\n"
-            << std::endl;
+    if (output) {
+        *output << "total high time: " << totalHighTime << "\n"
+                << "total low time: " << totalLowTime << "\n"
+                << "avg duty: " << avgDuty << "/100\n"
+                << "avg period: " << totalTime / numPeriods << "\n"
+                << std::endl;
+    }
     return avgDuty;
 }
 SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
@@ -181,12 +189,14 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         ticks_millis_t timeHigh = highToLowTime1 - lowToHighTime1;
         ticks_millis_t timeLow = lowToHighTime2 - highToLowTime1;
         double actualDuty = (timeHigh * 100.0) / (timeHigh + timeLow);
-        *output << "*** Timestamps testing one period with duty cycle " << duty << " and period " << pwm.period() << "***\n";
-        *output << "lowToHigh1: " << lowToHighTime1 << "\t"
-                << "highToLow1: " << highToLowTime1 << " \t lowToHigh2: " << lowToHighTime2 << "\n"
-                << "time high: " << timeHigh << "\t"
-                << "time low: " << timeLow << "\t"
-                << "actual duty cycle: " << actualDuty;
+        if (output) {
+            *output << "*** Timestamps testing one period with duty cycle " << duty << " and period " << pwm.period() << "***\n";
+            *output << "lowToHigh1: " << lowToHighTime1 << "\t"
+                    << "highToLow1: " << highToLowTime1 << " \t lowToHigh2: " << lowToHighTime2 << "\n"
+                    << "time high: " << timeHigh << "\t"
+                    << "time low: " << timeLow << "\t"
+                    << "actual duty cycle: " << actualDuty;
+        }
         CHECK(actualDuty == Approx(50.0).epsilon(0.01));
     }
 
@@ -221,10 +231,10 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         while (mock.state() != State::Inactive) {
             pwm.update(now++);
         }
-        INFO(now);
+        // INFO(now);
         for (; now < 10 * pwm.period(); now += 100) {
             pwm.update(now);
-            INFO(now);
+            // INFO(now);
             REQUIRE(mock.state() == State::Inactive);
         }
     }
@@ -236,10 +246,10 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         while (mock.state() != State::Active) {
             pwm.update(now++);
         }
-        INFO(now);
+        // INFO(now);
         for (; now < 10 * pwm.period(); now += 100) {
             pwm.update(now);
-            INFO(now);
+            // INFO(now);
             REQUIRE(mock.state() == State::Active);
         }
     }
@@ -258,7 +268,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
             if (now > nextUpdateTime) {
                 nextUpdateTime = pwm.update(now);
             }
-            INFO(now);
+            // INFO(now);
             CHECK(pwm.value() == Approx(50).margin(0.1));
         }
     }
@@ -291,9 +301,9 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
             if (now > nextUpdateTime) {
                 nextUpdateTime = pwm.update(now);
             }
-            INFO(now);
+            // INFO(now);
             CHECK(pwm.value() == Approx(50).margin(3));
-            INFO(double(pwm.value()));
+            // INFO(double(pwm.value()));
             auto durations = constrained->activeDurations(now);
             CHECK(durations.previousActive >= 2000);
             CHECK(durations.previousActive <= 2250);
@@ -490,13 +500,14 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         constrained->addConstraint(std::make_unique<ADConstraints::MinOnTime<2>>(300000));  // 5 minutes
         constrained->addConstraint(std::make_unique<ADConstraints::MinOffTime<1>>(600000)); // 10 minutes
 
-        CHECK(randomIntervalTest(10, pwm, mock, 50.0, 500, now) == Approx(50.0).margin(0.5));
-        CHECK(randomIntervalTest(10, pwm, mock, 20.0, 500, now) == Approx(20.0).margin(0.5));
-        CHECK(randomIntervalTest(10, pwm, mock, 80.0, 500, now) == Approx(80.0).margin(0.5));
+        // use max delay of 5000 here to speed up tests
+        CHECK(randomIntervalTest(10, pwm, mock, 50.0, 5000, now) == Approx(50.0).margin(0.5));
+        CHECK(randomIntervalTest(10, pwm, mock, 20.0, 5000, now) == Approx(20.0).margin(0.5));
+        CHECK(randomIntervalTest(10, pwm, mock, 80.0, 5000, now) == Approx(80.0).margin(0.5));
 
         // we don't use 2% and 98% here, because with the maximum history taken into account it is not achievable under the constraints
-        CHECK(randomIntervalTest(10, pwm, mock, 4.0, 500, now) == Approx(4.0).margin(0.5));
-        CHECK(randomIntervalTest(10, pwm, mock, 96.0, 500, now) == Approx(96.0).margin(0.5));
+        CHECK(randomIntervalTest(10, pwm, mock, 4.0, 5000, now) == Approx(4.0).margin(0.5));
+        CHECK(randomIntervalTest(10, pwm, mock, 96.0, 5000, now) == Approx(96.0).margin(0.5));
     }
 
     WHEN("The actuator has been set to 30% duty and switches to 20% with minimum ON time at 40% duty")
@@ -689,7 +700,7 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
             }
         }
         auto timeTotal = timeHigh1 + timeHigh2 + timeIdle;
-        INFO(std::to_string(timeHigh1) + ", " + std::to_string(timeHigh2) + ", " + std::to_string(timeIdle));
+        // INFO(std::to_string(timeHigh1) + ", " + std::to_string(timeHigh2) + ", " + std::to_string(timeIdle));
         auto avgDuty1 = double(timeHigh1) * 100 / timeTotal;
         auto avgDuty2 = double(timeHigh2) * 100 / timeTotal;
         CHECK(avgDuty1 == Approx(double(expected1)).margin(0.5));

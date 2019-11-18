@@ -40,7 +40,7 @@ TEST_CASE("Fixedpoint calculations", "[cnltest]")
             auto c = a_f * b_f;
             auto d = fp12_t(c);
 
-            INFO(c); // this makes the tests slow!
+            // INFO(c); // this makes the tests slow!
 
             REQUIRE(c < decltype(c)(max * max));
             REQUIRE(d >= 0);
@@ -62,7 +62,7 @@ TEST_CASE("Equivalent integer calculations", "[cnltest]")
             auto c = (int64_t(a) * int64_t(b)) >> 12;
             int32_t d = clamp(c, -(int64_t(1) << 23), (int64_t(1) << 23) - 1);
 
-            INFO(c);
+            // INFO(c);
 
             REQUIRE(c < int64_t(max * max) << 12);
             REQUIRE(d >= 0);

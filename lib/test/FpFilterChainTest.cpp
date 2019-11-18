@@ -51,7 +51,7 @@ SCENARIO("Fixed point filterchain using temp_t")
                 }
                 THEN("The steady state output matches the step amplitude")
                 {
-                    INFO(filter);
+                    // INFO(filter);
                     CHECK(chain.read() == Approx(temp_t(10)).epsilon(0.001));
                 }
             }
