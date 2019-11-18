@@ -24,7 +24,7 @@ clamp(const T& v, const T& lo, const T& hi)
 }
 
 const int max = 1000; // set to 100 when running with callgrind
-const int onlyTestEveryXLoops = 111;
+const int onlyTestEveryXLoops = 1;
 
 TEST_CASE("Fixedpoint calculations", "[cnltest]")
 {
@@ -40,7 +40,12 @@ TEST_CASE("Fixedpoint calculations", "[cnltest]")
 
             auto c = a_f * b_f;
             auto d = fp12_t(c);
-            if (loop % onlyTestEveryXLoops == 0) {
+
+            INFO(c); // this makes the tests slow!
+
+            if ((loop % onlyTestEveryXLoops) == 0) {
+                REQUIRE(c < decltype(c)(max * max));
+                REQUIRE(d >= 0);
                 if (c >= decltype(c)(4096)) {
                     REQUIRE(cnl::unwrap(d) == (int64_t(1) << 23) - 1);
                 };
@@ -59,8 +64,8 @@ TEST_CASE("Equivalent integer calculations", "[cnltest]")
             loop++;
             auto c = (int64_t(a) * int64_t(b)) >> 12;
             int32_t d = clamp(c, -(int64_t(1) << 23), (int64_t(1) << 23) - 1);
-            if (loop % onlyTestEveryXLoops == 0) {
-                REQUIRE(c < int64_t(1000000) << 12);
+            if ((loop % onlyTestEveryXLoops) == 0) {
+                REQUIRE(c < int64_t(max * max) << 12);
                 REQUIRE(d >= 0);
                 if (c >= (int64_t(1) << 23) - 1) {
                     REQUIRE(d == (int64_t(1) << 23) - 1);
