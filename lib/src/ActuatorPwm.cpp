@@ -15,10 +15,21 @@ ActuatorPwm::ActuatorPwm(
 }
 
 void
-ActuatorPwm::setting(value_t const& val)
+ActuatorPwm::setting(const value_t& val)
 {
-    m_dutySetting = std::clamp(val, value_t(0), value_t(100));
-    m_dutyTime = duration_millis_t((m_dutySetting * m_period) / value_t(100));
+    //m_dutySetting = std::clamp(val, value_t(0), value_t(100));
+    if (val <= 0) {
+        m_dutySetting = 0;
+        m_dutyTime = 0;
+    } else if (val >= 100) {
+        m_dutySetting = 100;
+        m_dutyTime = m_period;
+    } else {
+        m_dutySetting = val;
+        auto unScaledTime = m_dutySetting * m_period;
+        m_dutyTime = uint64_t(unScaledTime) / 100;
+    }
+
     settingValid(true);
 }
 

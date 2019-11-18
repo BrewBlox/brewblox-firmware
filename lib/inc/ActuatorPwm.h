@@ -93,7 +93,7 @@ public:
     /** Sets a new duty cycle
      * @param val new duty cycle in fixed point
      */
-    virtual void setting(value_t const& val) override final;
+    virtual void setting(const value_t& val) override final;
 
     update_t update(const update_t& now);
 
