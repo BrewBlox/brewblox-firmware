@@ -28,7 +28,7 @@ class Pid {
 public:
     using in_t = fp12_t;
     using out_t = fp12_t;
-    using integral_t = safe_elastic_fixed_point<31, -12>;
+    using integral_t = safe_elastic_fixed_point<30, -12>;
     using derivative_t = SetpointSensorPair::derivative_t;
 
 private:
