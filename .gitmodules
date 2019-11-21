@@ -1,6 +1,6 @@
 [submodule "lib/cnl"]
 	path = lib/cnl
-	url = https://github.com/BrewBlox/cnl.git
+	url = https://github.com/johnmcfarlane/cnl.git
 	branch = develop
 [submodule "platform/spark/device-os"]
 	path = platform/spark/device-os
