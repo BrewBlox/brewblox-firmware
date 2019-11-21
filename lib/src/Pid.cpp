@@ -49,7 +49,7 @@ Pid::update()
     m_p = m_kp * m_error;
 
     if (m_ti != 0) {
-        m_i = cnl::quotient(m_integral * m_kp, m_ti);
+        m_i = m_integral * safe_elastic_fixed_point<31, -27>(cnl::quotient(m_kp, m_ti));
     }
 
     m_d = -m_kp * (m_derivative * m_td);

@@ -873,7 +873,7 @@ SCENARIO("PID Test with PWM actuator", "[pid]")
 
         THEN("The new output matches what whas set")
         {
-            CHECK(pid.i() == 20);
+            CHECK(pid.i() == Approx(20).epsilon(0.001));
         }
     }
 
