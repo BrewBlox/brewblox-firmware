@@ -49,7 +49,7 @@ Pid::update()
     m_p = m_kp * m_error;
 
     if (m_ti != 0) {
-        m_i = (m_integral * m_kp) / m_ti;
+        m_i = cnl::quotient(m_integral * m_kp, m_ti);
     }
 
     m_d = -m_kp * (m_derivative * m_td);
@@ -87,8 +87,8 @@ Pid::update()
                             // clipped to actuator min or max set in target actuator
                             // calculate anti-windup from setting instead of actual value, so it doesn't dip under the maximum
                             // make sure anti-windup is at least m_error when clipping to prevent further windup, with extra anti-windup to scale back integral
-                            out_t excess = (pidResult - outputSetting) / m_kp;
-                            antiWindup = m_error + excess + excess + excess; // anti windup gain is 3
+                            out_t excess = cnl::quotient(pidResult - outputSetting, m_kp);
+                            antiWindup = m_error + int8_t(3) * excess; // anti windup gain is 3
                         } else {
                             // Actuator could be not reaching set value due to physics or limits in its target actuator
                             // Get the actual achieved value in actuator. This could differ due to slowness time/mutex limits
@@ -96,14 +96,14 @@ Pid::update()
                                 auto achievedValue = output->value();
 
                                 // Anti windup gain is 3
-                                out_t excess = (pidResult - achievedValue) / m_kp;
-                                antiWindup = excess + excess + excess; // anti windup gain is 3
+                                out_t excess = cnl::quotient(pidResult - achievedValue, m_kp);
+                                antiWindup = int8_t(3) * excess; // anti windup gain is 3
 
                                 // Disable anti-windup if integral part dominates. But only if it counteracts p.
-                                if (m_i < 0 && m_p < 0 && m_i < 3 * m_p) {
+                                if (m_i < 0 && m_p < 0 && m_i < int8_t(3) * m_p) {
                                     antiWindup = 0;
                                 }
-                                if (m_i > 0 && m_p > 0 && m_i > 3 * m_p) {
+                                if (m_i > 0 && m_p > 0 && m_i > int8_t(3) * m_p) {
                                     antiWindup = 0;
                                 }
                             }
