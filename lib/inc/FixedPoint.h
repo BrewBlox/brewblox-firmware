@@ -1,12 +1,14 @@
 #pragma once
 
+#ifdef __arm__
 #include <string>
 
-// forward declare std::to_string. Arm gcc 5.3 compiler doesn't know it exists and cnl has references to it in headers
+// forward declare std::to_string. Arm gcc 5.3 compiler cannot find it in headers and cnl has references to it in headers
 namespace std {
 template <typename T>
-extern string to_string(T);
+string to_string(T);
 }
+#endif
 
 #define CNL_USE_INT128 false
 #define CNL_RELEASE true

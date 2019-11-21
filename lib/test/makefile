@@ -71,7 +71,7 @@ LDFLAGS += -lgcov
 # include $(SOURCE_PATH)/build/checkers.mk # sanitizer and gcov
 
 # generate map file
-LDFLAGS += -Xlinker -Map=libtest.map 
+LDFLAGS += -Xlinker -Map=build/libtest.map 
 
 # don't generate warnings for system headers
 CFLAGS += -Wno-system-headers

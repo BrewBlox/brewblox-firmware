@@ -118,22 +118,22 @@ SCENARIO("When two analog actuators are constrained by a balancer", "[constraint
         cAct1.setting(60);
         cAct2.setting(60);
 
-        CHECK(cAct1.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(50).margin(0.001));
+        CHECK(cAct2.setting() == Approx(50).margin(0.001));
 
         balancer->update();
         cAct1.setting(70);
         cAct2.setting(30);
 
-        CHECK(cAct1.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(30).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(50).margin(0.001));
+        CHECK(cAct2.setting() == Approx(30).margin(0.001));
 
         balancer->update();
         cAct1.setting(70);
         cAct2.setting(30);
 
-        CHECK(cAct1.setting() == Approx(70).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(30).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(70).margin(0.001));
+        CHECK(cAct2.setting() == Approx(30).margin(0.001));
     }
 
     THEN("Values that are clipped by the actuator are not used by the balancer")
@@ -161,8 +161,8 @@ SCENARIO("When two analog actuators are constrained by a balancer", "[constraint
         cAct1.setting(70);
         cAct2.setting(30);
 
-        CHECK(cAct1.setting() == Approx(70).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(30).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(70).margin(0.001));
+        CHECK(cAct2.setting() == Approx(30).margin(0.001));
     }
     THEN("if the previous request didn't exceed the total, the excess is equally distributed for the granted values")
     {
@@ -173,8 +173,8 @@ SCENARIO("When two analog actuators are constrained by a balancer", "[constraint
         cAct1.setting(100);
         cAct2.setting(100);
 
-        CHECK(cAct1.setting() == Approx(60).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(40).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(60).margin(0.001));
+        CHECK(cAct2.setting() == Approx(40).margin(0.001));
 
         balancer->update();
         cAct1.setting(0);
@@ -183,16 +183,16 @@ SCENARIO("When two analog actuators are constrained by a balancer", "[constraint
         cAct1.setting(100);
         cAct2.setting(100);
 
-        CHECK(cAct1.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
-        CHECK(cAct2.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
+        CHECK(cAct1.setting() == Approx(50).margin(0.001));
+        CHECK(cAct2.setting() == Approx(50).margin(0.001));
 
         AND_THEN("On the next request it is limited")
         {
             balancer->update();
             cAct1.setting(100);
             cAct2.setting(100);
-            CHECK(cAct1.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
-            CHECK(cAct2.setting() == Approx(50).margin(cnl::numeric_limits<value_t>::min()));
+            CHECK(cAct1.setting() == Approx(50).margin(0.001));
+            CHECK(cAct2.setting() == Approx(50).margin(0.001));
         }
     }
 

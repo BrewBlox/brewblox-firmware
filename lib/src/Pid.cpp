@@ -122,3 +122,32 @@ Pid::update()
         }
     }
 }
+
+void
+Pid::kp(const in_t& arg)
+{
+    if (arg != 0) {
+        // scale integral history so integral action doesn't change
+        m_integral = m_integral * safe_elastic_fixed_point<31, -16>(cnl::quotient(m_kp, arg));
+    }
+    m_kp = arg;
+}
+
+void
+Pid::ti(const uint16_t& arg)
+{
+    if (m_ti != 0) {
+        // scale integral history so integral action doesn't change
+        m_integral = cnl::wrap<integral_t>((int64_t(cnl::unwrap(m_integral)) * arg) / m_ti);
+    }
+    m_ti = arg;
+}
+
+void
+Pid::setIntegral(const out_t& newIntegratorPart)
+{
+    if (m_kp == 0) {
+        return;
+    }
+    m_integral = m_ti * safe_elastic_fixed_point<31, -16>(cnl::quotient(newIntegratorPart, m_kp));
+}

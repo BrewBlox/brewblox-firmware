@@ -61,43 +61,7 @@ public:
         return (m_enabled && !m_points.empty());
     }
 
-    void update(const utc_seconds_t& time)
-    {
-        struct TimeStampLessEqual {
-            bool operator()(const Point& p, const utc_seconds_t& time) const { return p.time <= time; }
-            bool operator()(const utc_seconds_t& time, const Point& p) const { return time <= p.time; }
-        };
-
-        if (!isDriving()) {
-            return;
-        }
-
-        auto newTemp = temp_t(0);
-
-        if (!m_points.empty() && time != 0) {
-
-            if (m_profileStartTime > time) {
-                return;
-            }
-            auto elapsed = time - m_profileStartTime;
-            auto upper = std::lower_bound(m_points.cbegin(), m_points.cend(), elapsed, TimeStampLessEqual{});
-            if (upper == m_points.cend()) { // every point is in the past, use the last point
-                newTemp = m_points.back().temp;
-            } else if (upper != m_points.cbegin()) { // first point is not in the future
-                auto lower = upper - 1;
-                auto segmentElapsed = elapsed - lower->time;
-                auto segmentDuration = upper->time - lower->time;
-                auto interpolated = lower->temp + segmentElapsed * (upper->temp - lower->temp) / (segmentDuration);
-                newTemp = interpolated;
-            } else {
-                return;
-            }
-            if (auto targetPtr = m_target()) {
-                targetPtr->setting(newTemp);
-                targetPtr->settingValid(true);
-            }
-        }
-    }
+    void update(const utc_seconds_t& time);
 
     bool enabled() const
     {

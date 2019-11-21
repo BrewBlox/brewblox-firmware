@@ -17,12 +17,11 @@ ActuatorPwm::ActuatorPwm(
 void
 ActuatorPwm::setting(const value_t& val)
 {
-    //m_dutySetting = std::clamp(val, value_t(0), value_t(100));
-    if (val <= 0) {
-        m_dutySetting = 0;
+    if (val <= value_t{0}) {
+        m_dutySetting = value_t{0};
         m_dutyTime = 0;
-    } else if (val >= 100) {
-        m_dutySetting = 100;
+    } else if (val >= maxDuty()) {
+        m_dutySetting = maxDuty();
         m_dutyTime = m_period;
     } else {
         m_dutySetting = val;
@@ -53,7 +52,7 @@ ActuatorPwm::manageTimerTask()
         if (timerFuncId) {
             TimerInterrupts::remove(timerFuncId);
             timerFuncId = 0;
-            m_dutyAchieved = 0;
+            m_dutyAchieved = value_t{0};
         }
     }
 }
@@ -95,7 +94,7 @@ ActuatorPwm::timerTask()
                 actPtr->setStateUnlogged(State::Active);
             }
             if (m_fastPwmElapsed == 1) {
-                m_dutyAchieved = 0; // never active in previous cycle
+                m_dutyAchieved = value_t{0}; // never active in previous cycle
             }
         } else {
             if (m_fastPwmElapsed >= m_dutyTime) {
@@ -103,7 +102,7 @@ ActuatorPwm::timerTask()
                 m_dutyAchieved = m_fastPwmElapsed;
             } else {
                 if (m_fastPwmElapsed == 99) {
-                    m_dutyAchieved = 100; // never inactive in this cycle
+                    m_dutyAchieved = maxDuty(); // never inactive in this cycle
                 }
             }
         }
@@ -144,7 +143,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         if (previousPeriod < m_period) {
             auto shortenedBy = m_period - durations.previousPeriod;
             previousPeriod = m_period;
-            previousHighTime += ticks_millis_t((m_dutySetting / 100) * shortenedBy);
+            previousHighTime += ticks_millis_t(shortenedBy * dutyFraction());
         }
         auto twoPeriodElapsed = previousPeriod + currentPeriod;
 
@@ -155,12 +154,12 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         auto invDutyTime = m_period - m_dutyTime;
 
         if (currentState == State::Active) {
-            if (m_dutySetting == value_t(100)) {
-                m_dutyAchieved = 100;
+            if (m_dutySetting == maxDuty()) {
+                m_dutyAchieved = maxDuty();
                 return now + 1000;
             }
 
-            if (m_dutySetting <= value_t(50)) {
+            if (m_dutySetting <= maxDuty() >> 1) {
                 // high period is fixed, low period adapts
                 if (currentHighTime < m_dutyTime) {
                     wait = m_dutyTime - currentHighTime;
@@ -176,7 +175,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
 
                 if (currentHighTime < maxHighTime) {
                     // for checking the currently achieved value, look back max 2 periods (toggles)
-                    auto twoPeriodTargetHighTime = duration_millis_t((m_dutySetting / 100) * twoPeriodElapsed);
+                    auto twoPeriodTargetHighTime = duration_millis_t(twoPeriodElapsed * dutyFraction());
 
                     // if previous high time is twice the unadjusted high time
                     // use at least normal high time, because this is a due to a big duty setting decrease
@@ -198,13 +197,13 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             }
             m_valueValid = true;
         } else if (currentState == State::Inactive) {
-            if (m_dutySetting == value_t(0)) {
-                m_dutyAchieved = 0;
+            if (m_dutySetting == value_t{0}) {
+                m_dutyAchieved = value_t{0};
                 return now + 1000;
             }
             auto currentLowTime = currentPeriod - currentHighTime;
 
-            if (m_dutySetting > value_t(50)) {
+            if (m_dutySetting > value_t{50}) {
                 // low period is fixed, high period adapts
                 if (currentLowTime < invDutyTime) {
                     wait = invDutyTime - currentLowTime;
@@ -220,7 +219,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
 
                 if (currentLowTime < maxLowTime) {
                     // for checking the currently achieved value, look back max 2 periods (toggles)
-                    auto twoPeriodTargetLowTime = duration_millis_t(((value_t(100) - m_dutySetting) / 100) * twoPeriodElapsed);
+                    auto twoPeriodTargetLowTime = twoPeriodElapsed - duration_millis_t(dutyFraction() * twoPeriodElapsed);
 
                     // if previous low time is twice the unadjusted low time
                     // use at least normal low time, because this is a due to a big duty setting increase
@@ -268,10 +267,10 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
 
         twoPeriodElapsed += wait; // take into account period until next update in calculating achieved
         if (twoPeriodElapsed == 0) {
-            m_dutyAchieved = 0;
+            m_dutyAchieved = value_t{0};
         } else {
             // calculate achieved duty cycle
-            value_t dutyAchieved = cnl::quotient(100 * twoPeriodHighTime, twoPeriodElapsed);
+            value_t dutyAchieved = maxDuty() * safe_elastic_fixed_point<31, -24>(cnl::quotient(twoPeriodHighTime, twoPeriodElapsed));
             if (toggled // end of high or low time or
                         // current period is long enough to start using the current achieved value including this period
                 || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)

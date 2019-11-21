@@ -35,12 +35,12 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
 
     WHEN("the profile has no values, it does not change the setpoint")
     {
-        CHECK(sspair->setting() == temp_t(99));
+        CHECK(sspair->setting() == Approx(99).margin(0.001));
         CHECK(profile.isDriving() == false);
 
         profile.update(0);
 
-        CHECK(sspair->setting() == temp_t(99));
+        CHECK(sspair->setting() == Approx(99).margin(0.001));
         CHECK(profile.isDriving() == false);
     }
 
@@ -55,10 +55,10 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
             THEN("The profile doesn't change the setpoint, but does indicate it as driving")
             {
                 profile.update(1);
-                CHECK(sspair->setting() == temp_t(99));
+                CHECK(sspair->setting() == Approx(99).margin(0.001));
                 CHECK(profile.isDriving() == true);
                 profile.update(5);
-                CHECK(sspair->setting() == temp_t(99));
+                CHECK(sspair->setting() == Approx(99).margin(0.001));
                 CHECK(profile.isDriving() == true);
             }
         }
@@ -67,7 +67,7 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
             profile.update(2000);
             THEN("The profile sets the setpoint to this value")
             {
-                CHECK(sspair->setting() == temp_t(10));
+                CHECK(sspair->setting() == Approx(10).margin(0.001));
                 CHECK(profile.isDriving() == true);
             }
         }
@@ -82,36 +82,36 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
         AND_WHEN("The time is before the first point, it doesn't change the setpoint, but it is shown as driving")
         {
             profile.update(5);
-            CHECK(sspair->setting() == temp_t(99));
+            CHECK(sspair->setting() == Approx(99).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time is after the last point, the last temp is used")
         {
             profile.update(22);
-            CHECK(sspair->setting() == temp_t(20));
+            CHECK(sspair->setting() == Approx(20).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time between the 2 points, it is correctly interpolated")
         {
             profile.update(12);
-            CHECK(sspair->setting() == temp_t(11));
+            CHECK(sspair->setting() == Approx(11).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(16);
-            CHECK(sspair->setting() == temp_t(15));
+            CHECK(sspair->setting() == Approx(15).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time is exactly at a point, that temp is used")
         {
             profile.update(11);
-            CHECK(sspair->setting() == temp_t(10));
+            CHECK(sspair->setting() == Approx(10).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(21);
-            CHECK(sspair->setting() == temp_t(20));
+            CHECK(sspair->setting() == Approx(20).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
     }
@@ -126,48 +126,48 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
         AND_WHEN("The time is before the first point, it doesn't change the setpoint but is indicated as driving")
         {
             profile.update(5);
-            CHECK(sspair->setting() == temp_t(99));
+            CHECK(sspair->setting() == Approx(99).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time is after the last point, the last temp is used")
         {
             profile.update(32);
-            CHECK(sspair->setting() == temp_t(40));
+            CHECK(sspair->setting() == Approx(40).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time between the 2 points, it is correctly interpolated")
         {
             profile.update(12);
-            CHECK(sspair->setting() == temp_t(11));
+            CHECK(sspair->setting() == Approx(11).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(16);
-            CHECK(sspair->setting() == temp_t(15));
+            CHECK(sspair->setting() == Approx(15).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(22);
-            CHECK(sspair->setting() == temp_t(22));
+            CHECK(sspair->setting() == Approx(22).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(30);
-            CHECK(sspair->setting() == temp_t(38));
+            CHECK(sspair->setting() == Approx(38).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time is exactly at a point, that temp is used")
         {
             profile.update(11);
-            CHECK(sspair->setting() == temp_t(10));
+            CHECK(sspair->setting() == Approx(10).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(21);
-            CHECK(sspair->setting() == temp_t(20));
+            CHECK(sspair->setting() == Approx(20).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(31);
-            CHECK(sspair->setting() == temp_t(40));
+            CHECK(sspair->setting() == Approx(40).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
     }
@@ -183,18 +183,19 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
         AND_WHEN("The time is before the step, it is correctly interpolated with the first point of the step")
         {
             profile.update(12);
-            CHECK(sspair->setting() == temp_t(11));
+            CHECK(sspair->setting() == Approx(11).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(16);
-            CHECK(sspair->setting() == temp_t(15));
+            CHECK(sspair->setting() == Approx(15).margin(0.001));
             CHECK(profile.isDriving() == true);
         }
 
         AND_WHEN("The time is at the step (rounded down to whole seconds), it is equal to the last point of the step")
         {
             profile.update(21);
-            CHECK(sspair->setting() == temp_t(30));
+            CHECK(sspair->setting() == Approx(30).margin(0.001));
+            ;
             CHECK(profile.isDriving() == true);
         }
 
@@ -202,11 +203,12 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
         {
 
             profile.update(22);
-            CHECK(sspair->setting() == temp_t(31));
+            CHECK(sspair->setting() == Approx(31).margin(0.001));
             CHECK(profile.isDriving() == true);
 
             profile.update(31);
-            CHECK(sspair->setting() == temp_t(40));
+            CHECK(sspair->setting() == Approx(40).margin(0.001));
+            ;
             CHECK(profile.isDriving() == true);
         }
     }
@@ -218,7 +220,8 @@ SCENARIO("SetpointProfile test", "[SetpointProfile]")
         profile.addPoint(SetpointProfile::Point{utc_seconds_t(11), temp_t(20)});
 
         profile.update(0);
-        CHECK(sspair->setting() == temp_t(99));
+        CHECK(sspair->setting() == Approx(99).margin(0.001));
+        ;
 
         CHECK(profile.isDriving() == true);
     }

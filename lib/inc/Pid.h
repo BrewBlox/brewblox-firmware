@@ -108,28 +108,14 @@ public:
         return m_kp;
     }
 
-    void kp(const in_t& arg)
-    {
-        if (arg != 0) {
-            // scale integral history so integral action doesn't change
-            m_integral = (m_integral * m_kp) / arg;
-        }
-        m_kp = arg;
-    }
+    void kp(const in_t& arg);
 
     auto ti() const
     {
         return m_ti;
     }
 
-    void ti(const uint16_t& arg)
-    {
-        if (m_ti != 0) {
-            // scale integral history so integral action doesn't change
-            m_integral = (m_integral * arg) / m_ti;
-        }
-        m_ti = arg;
-    }
+    void ti(const uint16_t& arg);
 
     auto td() const
     {
@@ -156,13 +142,7 @@ public:
     {
         return m_active;
     }
-    void setIntegral(const out_t& newIntegratorPart)
-    {
-        if (m_kp == 0) {
-            return;
-        }
-        m_integral = newIntegratorPart * m_ti / m_kp;
-    }
+    void setIntegral(const out_t& newIntegratorPart);
 
     bool boilModeActive() const
     {

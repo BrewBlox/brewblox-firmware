@@ -554,14 +554,13 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         }
         THEN("It pwm will settle on the desired duty")
         {
-            for (; now < 200000; now += 100) {
-                if (now >= nextUpdate) {
-                    nextUpdate = pwm.update(now);
-                }
+            while (now < 200000) {
+                now = pwm.update(now);
             }
-            CHECK(pwm.value() == 20.0);
+
+            CHECK(pwm.value() == Approx(20.0).margin(0.001));
             auto durations = constrained->activeDurations(now);
-            CHECK(double(durations.previousActive) / double(durations.previousPeriod) == 0.2);
+            CHECK(double(durations.previousActive) / double(durations.previousPeriod) == Approx(0.2).margin(0.0001));
             AND_THEN("The stretched periods will have expected length")
             {
                 // finish period
@@ -570,7 +569,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
                     pwm.update(now);
                 }
                 durations = constrained->activeDurations(now);
-                CHECK(durations.previousPeriod == 20000);
+                CHECK(durations.previousPeriod == Approx(20000).margin(2));
 
                 // finish another period
 
@@ -586,7 +585,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
 
                 durations = constrained->activeDurations(now);
 
-                CHECK(durations.previousPeriod == 20000);
+                CHECK(durations.previousPeriod == Approx(20000).margin(2));
             }
         }
     }
