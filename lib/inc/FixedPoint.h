@@ -8,10 +8,10 @@ namespace std {
 template <typename T>
 string to_string(T);
 }
+#define CNL_RELEASE true
 #endif
 
 #define CNL_USE_INT128 false
-#define CNL_RELEASE true
 
 #include "../cnl/include/cnl/num_traits.h"
 #include "../cnl/include/cnl/static_number.h"
