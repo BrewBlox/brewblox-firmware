@@ -138,17 +138,20 @@ SCENARIO("A Blox Pid object with mock analog actuator")
     CHECK(cnl::wrap<Pid::out_t>(decoded.d()) == 0);
     CHECK(cnl::wrap<Pid::out_t>(decoded.outputvalue()) == Approx(15.0).epsilon(0.01));
 
-    // only nonzero values are shown in the debug string
-    CHECK(decoded.ShortDebugString() == "inputId: 101 outputId: 102 "
-                                        "inputValue: 81920 inputSetting: 86016 "
-                                        "outputValue: 61440 outputSetting: 61440 "
-                                        "enabled: true active: true "
-                                        "kp: 40960 ti: 2000 td: 200 "
-                                        "p: 40960 i: 20480 "
-                                        "error: 4096 integral: 4096000 "
-                                        "drivenOutputId: 102 "
-                                        "boilPointAdjust: -2048 "
-                                        "boilMinOutput: 102400");
+    THEN("The decoded proto message is correct")
+    {
+        // only nonzero values are shown in the debug string
+        CHECK(decoded.ShortDebugString() == "inputId: 101 outputId: 102 "
+                                            "inputValue: 81920 inputSetting: 86016 "
+                                            "outputValue: 61439 outputSetting: 61439 "
+                                            "enabled: true active: true "
+                                            "kp: 40960 ti: 2000 td: 200 "
+                                            "p: 40960 i: 20479 "
+                                            "error: 4096 integral: 4096000 "
+                                            "drivenOutputId: 102 "
+                                            "boilPointAdjust: -2048 "
+                                            "boilMinOutput: 102400");
+    }
 
     THEN("The integral value can be written externally to reset it trough the integralReset field")
     {
