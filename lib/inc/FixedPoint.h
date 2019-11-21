@@ -1,5 +1,16 @@
 #pragma once
 
+#include <string>
+
+// forward declare std::to_string. Arm gcc 5.3 compiler doesn't know it exists and cnl has references to it in headers
+namespace std {
+template <typename T>
+extern string to_string(T);
+}
+
+#define CNL_USE_INT128 false
+#define CNL_RELEASE true
+
 #include "../cnl/include/cnl/num_traits.h"
 #include "../cnl/include/cnl/static_number.h"
 #include <cstdint>
