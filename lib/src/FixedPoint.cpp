@@ -54,3 +54,40 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
     s.insert(s.end() - decimals, '.');
     return s;
 }
+
+// implementation below using CNL functions is much slower
+std::string
+to_string_dec2(const fp12_t& t, uint8_t decimals)
+{
+    using calc_t = cnl::set_rounding_t<safe_elastic_fixed_point<31, -16>, cnl::native_rounding_tag>;
+
+    int rounderScale = 10;
+    for (uint8_t i = decimals; i > 0; --i) {
+        rounderScale *= 10;
+    }
+    calc_t rounder = (t >= 0) ? calc_t{5} : calc_t{-5};
+    calc_t val = calc_t{t} * rounderScale + rounder;
+
+    auto rounded = val / rounderScale;
+    auto s = cnl::to_string(rounded);
+    auto dot = s.find_first_of('.');
+    auto end = s.length();
+    auto originalDecimals = end - dot - 1;
+    if (dot == std::string::npos) {
+        // no dot found, append zeros
+        s.push_back('.');
+        while (decimals-- > 0) {
+            s.push_back('0');
+        }
+    } else if (originalDecimals < decimals) {
+        while (decimals-- >= originalDecimals) {
+            s.push_back('0');
+        }
+    } else if (originalDecimals > decimals) {
+        while (originalDecimals-- > decimals) {
+            s.pop_back();
+        }
+    }
+
+    return s;
+}

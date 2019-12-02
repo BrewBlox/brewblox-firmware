@@ -25,9 +25,9 @@
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = safe_elastic_fixed_point<15, -8>;
-using temp_precise_t = safe_elastic_fixed_point<31, -24>;
-using temp_wide_t = safe_elastic_fixed_point<31, -8>;
+using temp_t = safe_elastic_fixed_point<23, -12>;
+using temp_precise_t = safe_elastic_fixed_point<31, -20>;
+using temp_wide_t = safe_elastic_fixed_point<31, -12>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
@@ -48,9 +48,9 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("Size is as small as a normal raw integer")
     {
-        CHECK(sizeof(temp_t) == 4); // smallest is 32 bit
+        CHECK(sizeof(temp_t) == 4);
         auto result1 = temp_t(10) * temp_t(10);
-        CHECK(sizeof(result1) == 4); // but result is still 32 bit, because number of bits was set to 15.
+        CHECK(sizeof(result1) == 8); // // type has widened here
         CHECK(sizeof(temp_precise_t) == 4);
         auto result2 = temp_precise_t(10) * temp_precise_t(10);
         CHECK(sizeof(result2) == 8); // type has widened here
@@ -79,11 +79,11 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t == temp_t(0.5));
 
         // clipping conversion should be constrained to min/max
-        tl = -150;
+        tl = -15000;
         t = tl;
         CHECK(t == cnl::numeric_limits<temp_t>::lowest());
 
-        tl = 150;
+        tl = 15000;
         t = tl;
         CHECK(t == cnl::numeric_limits<temp_t>::max());
     }
@@ -118,16 +118,16 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("test_min_max")
     {
-        CHECK(Approx(-128.0).margin(0.01) == double(cnl::numeric_limits<temp_t>::lowest()));
-        CHECK(-128.0 < double(cnl::numeric_limits<temp_t>::max()));
+        CHECK(Approx(-2048.0).margin(0.01) == double(cnl::numeric_limits<temp_t>::lowest()));
+        CHECK(-2048.0 < double(cnl::numeric_limits<temp_t>::max()));
 
-        CHECK(Approx(128.0).margin(0.01) == double(cnl::numeric_limits<temp_t>::max()));
+        CHECK(Approx(2048.0).margin(0.01) == double(cnl::numeric_limits<temp_t>::max()));
 
-        CHECK(Approx(-128.0) == double(cnl::numeric_limits<temp_precise_t>::lowest()));
-        CHECK(Approx(128.0) == double(cnl::numeric_limits<temp_precise_t>::max()));
+        CHECK(Approx(-2048.0) == double(cnl::numeric_limits<temp_precise_t>::lowest()));
+        CHECK(Approx(2048.0) == double(cnl::numeric_limits<temp_precise_t>::max()));
 
-        CHECK(Approx(0.0 - pow(2, 23)) == double(cnl::numeric_limits<temp_wide_t>::lowest()));
-        CHECK(Approx(pow(2, 23)) == double(cnl::numeric_limits<temp_wide_t>::max()));
+        CHECK(Approx(0.0 - pow(2, 19)) == double(cnl::numeric_limits<temp_wide_t>::lowest()));
+        CHECK(Approx(pow(2, 19)) == double(cnl::numeric_limits<temp_wide_t>::max()));
     }
     WHEN("multiplication")
     {
@@ -146,7 +146,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
         auto t3 = t1 * t2;
         temp_t t4 = t3;
-        CHECK(t3 == 14400);
+        CHECK(t3 == decltype(t3){14400});
         CHECK(t4 == cnl::numeric_limits<temp_t>::max());
 
         t1 = short(-120);
@@ -154,7 +154,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         auto t5 = t1 * t2;
         temp_t t6 = t5;
 
-        CHECK(t5 == -14400);
+        CHECK(t5 == decltype(t5){-14400});
         CHECK(t6 == cnl::numeric_limits<temp_t>::lowest());
     }
 
@@ -174,7 +174,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("multiplication_of_temp_and_temp_long")
     {
-        temp_t t1 = 3.0;
+        temp_t t1 = 30.0;
         temp_wide_t t2 = 3.0;
         temp_wide_t t3 = 100.0;
 
@@ -184,15 +184,15 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         temp_t t6 = t1 * t3;      // should be constrained to temp max
         temp_wide_t t7 = t1 * t3; // should fit in t7
 
-        CHECK(t4 == temp_t(9.0));
-        CHECK(t5 == temp_wide_t(9.0));
+        CHECK(t4 == temp_t(90.0));
+        CHECK(t5 == temp_wide_t(90.0));
         CHECK(t6 == cnl::numeric_limits<temp_t>::max());
-        CHECK(t7 == temp_wide_t(300.0));
+        CHECK(t7 == temp_wide_t(3000.0));
     }
 
     WHEN("multiplication_of_temp_precise_and_temp_long")
     {
-        temp_precise_t t1 = 3.0;
+        temp_precise_t t1 = 30.0;
         temp_wide_t t2 = 3.0;
         temp_wide_t t3 = 100.0;
 
@@ -202,10 +202,10 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         temp_precise_t t6 = t1 * t3; // should be constrained to temp_precise max
         temp_wide_t t7 = t1 * t3;    // should fit in t7
 
-        CHECK(t4 == temp_precise_t(9.0));
-        CHECK(t5 == temp_wide_t(9.0));
+        CHECK(t4 == temp_precise_t(90.0));
+        CHECK(t5 == temp_wide_t(90.0));
         CHECK(t6 == cnl::numeric_limits<temp_precise_t>::max());
-        CHECK(t7 == temp_wide_t(300.0));
+        CHECK(t7 == temp_wide_t(3000.0));
     }
 
     WHEN("addition")
@@ -224,13 +224,13 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("overflowing_addition_is_constrained")
     {
-        temp_t t1 = short(120);
-        temp_t t2 = short(120);
+        temp_t t1 = short(3000);
+        temp_t t2 = short(3000);
 
         REQUIRE(temp_t(t1 + t2) == cnl::numeric_limits<temp_t>::max());
 
-        t1 = short(-120);
-        t2 = short(-120);
+        t1 = short(-3000);
+        t2 = short(-3000);
 
         REQUIRE(temp_t(t1 + t2) == cnl::numeric_limits<temp_t>::lowest());
     }
@@ -253,7 +253,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
     {
         temp_t t1 = 30.0;
         temp_wide_t t2 = 30.0;
-        temp_wide_t t3 = 200.0;
+        temp_wide_t t3 = 3000.0;
 
         temp_t t4 = t1 + t2;
         temp_wide_t t5 = t2 + t1;
@@ -264,14 +264,14 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t4 == temp_t(60.0));
         CHECK(t5 == temp_wide_t(60.0));
         CHECK(t6 == cnl::numeric_limits<temp_t>::max());
-        CHECK(t7 == temp_wide_t(230.0));
+        CHECK(t7 == temp_wide_t(3030.0));
     }
 
     WHEN("addition_of_temp_precise_and_temp_long")
     {
         temp_precise_t t1 = 30.0;
         temp_wide_t t2 = 30.0;
-        temp_wide_t t3 = 100.0;
+        temp_wide_t t3 = 3000.0;
 
         temp_precise_t t4 = t1 + t2;
         temp_wide_t t5 = t2 + t1;
@@ -282,7 +282,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t4 == temp_precise_t(60.0));
         CHECK(t5 == temp_wide_t(60.0));
         CHECK(t6 == cnl::numeric_limits<temp_precise_t>::max());
-        CHECK(t7 == temp_wide_t(130.0));
+        CHECK(t7 == temp_wide_t(3030.0));
     }
 
     WHEN("subtraction")
@@ -305,8 +305,8 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
     WHEN("overflowing_subtraction_is_constrained")
     {
-        temp_t t1 = 120;
-        temp_t t2 = -120;
+        temp_t t1 = 3000;
+        temp_t t2 = -3000;
 
         REQUIRE(temp_t(t1 - t2) == cnl::numeric_limits<temp_t>::max());
 
@@ -331,7 +331,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
     {
         temp_t t1 = 90.0;
         temp_wide_t t2 = 30.0;
-        temp_wide_t t3 = -200.0;
+        temp_wide_t t3 = -3000.0;
 
         temp_t t4 = t1 - t2;
         temp_wide_t t5 = t2 - t1;
@@ -342,14 +342,14 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t4 == temp_t(60.0));
         CHECK(t5 == temp_wide_t(-60.0));
         CHECK(t6 == cnl::numeric_limits<temp_t>::max());
-        CHECK(t7 == temp_wide_t(290.0));
+        CHECK(t7 == temp_wide_t(3090.0));
     }
 
     WHEN("subtraction_of_temp_precise_and_temp_long")
     {
         temp_precise_t t1 = 90.0;
         temp_wide_t t2 = 30.0;
-        temp_wide_t t3 = -200.0;
+        temp_wide_t t3 = -3000.0;
 
         temp_precise_t t4 = t1 - t2;
         temp_wide_t t5 = t2 - t1;
@@ -360,7 +360,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(t4 == temp_precise_t(60.0));
         CHECK(t5 == temp_wide_t(-60.0));
         CHECK(t6 == cnl::numeric_limits<temp_precise_t>::max());
-        CHECK(t7 == temp_wide_t(290.0));
+        CHECK(t7 == temp_wide_t(3090.0));
     }
 
     WHEN("unary_minus")
@@ -404,9 +404,8 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         // check multiplying high precision values, but with upper bits not zero.
         CHECK(temp_precise_t(0.5078125) * uint16_t(100) == 50.78125);
 
-        // conversion between temp_precise and temp_long rounds down, due to the non rounded arithmetic shift.
-        // That's why the result below is 0.933594 instead of 0.9375
-        CHECK(temp_wide_t(temp_precise_t(0.0156109333) * uint16_t(60)) == Approx(0.933594));
+        // conversion between temp_precise and temp_long
+        CHECK(temp_wide_t(temp_precise_t(0.0156109333) * uint16_t(100)) == temp_wide_t{1.56109333});
     }
 
     WHEN("right_shift")
@@ -419,29 +418,24 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         REQUIRE(double(t3) == 1.0);
     }
 
-    WHEN("from base")
+    WHEN("from raw")
     {
-        auto t1 = cnl::wrap<temp_t>(256);
+        auto t1 = cnl::wrap<temp_t>(4096);
         CHECK(t1 == 1.0);
     }
 
-    WHEN("to base")
+    WHEN("to raw")
     {
-        auto t1 = cnl::wrap<temp_t>(256);
-        CHECK(cnl::unwrap(t1) == 256);
+        auto t1 = cnl::wrap<temp_t>(4096);
+        CHECK(cnl::unwrap(t1) == 4096);
     }
 
-    WHEN("intermediate results not truncating")
+    WHEN("multiplication of 3 temp_t values")
     {
         auto t1 = temp_t(1);
-        auto t2 = t1 * t1;
-        //auto t3 = t2 * t1;
-        //auto t4 = t3 * t1; // now t1^4
-        auto t5 = (t1 * t1) * (t1 * t1);
-        auto t4 = t2 * t2;
+        auto t2 = safe_elastic_fixed_point<39, -24>(t1 * t1) * t1; // intermediate trunctation is needed to not exceed 64 bits
 
-        CHECK(t5 == 1.0);
-        CHECK(t4 == 1.0);
+        CHECK(t2 == 1.0);
 
         //WARN(boost::core::demangle(typeid(t2).name()));
         //WARN(boost::core::demangle(typeid(t3).name()));
@@ -472,21 +466,27 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         CHECK(to_string_dec(temp_t(0.01), 2) == "0.01");
         CHECK(to_string_dec(temp_t(-0.01), 2) == "-0.01");
 
-        auto bit = cnl::wrap<temp_t>(1);
+        auto bit = cnl::numeric_limits<temp_t>::min();
+        REQUIRE(bit == 1.0 / 4096);
         for (auto t = temp_t(-11); t < temp_t(11); t += bit) {
-            auto rounder = (t >= temp_t(0)) ? double(0.005) : -double(0.005);
-            double d = double(t);
-            if (d > -0.00499999 && d < 0.0) {
-                d = 0.0; // we don't use -0.00 for
-            } else {
-                d += rounder;
+            auto d = std::round(float(t) * 100) / 100; // round away from zero
+            //auto d = float{t};
+            std::ostringstream ostr;
+            // Set Fixed -Point Notation
+            ostr << std::fixed;
+            // Set precision to 2 digits
+            ostr << std::setprecision(2);
+            ostr << d;
+            auto s = ostr.str();
+            if (s == "-0.00") {
+                s = "0.00";
             }
-            auto s = std::to_string(d);
 
-            // INFO(d);
-            // INFO(t);
-            s.erase(s.find('.') + 3, std::string::npos);
-            REQUIRE(to_string_dec(t, 2) == s);
+            //INFO(d);
+            //INFO(t);
+            //INFO(s);
+
+            CHECK(to_string_dec(t, 2) == s);
         }
     }
 }
