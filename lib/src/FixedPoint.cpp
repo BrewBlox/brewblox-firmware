@@ -32,12 +32,8 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
         shifted = shifted * int8_t(10);
     }
 
-    // ensure correct rounding
-    auto rounder = fp12_t(0.5);
-    shifted = t >= fp12_t(0) ? shifted + rounder : shifted - rounder;
-
     // convert to int
-    auto intValue = int32_t(shifted);
+    auto intValue = int32_t(shifted); // will round correctly due to nearest_roundig_tag
 
     // convert to string
     auto s = std::string();
@@ -59,7 +55,7 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
 std::string
 to_string_dec2(const fp12_t& t, uint8_t decimals)
 {
-    using calc_t = cnl::set_rounding_t<safe_elastic_fixed_point<31, -16>, cnl::native_rounding_tag>;
+    using calc_t = cnl::set_rounding_t<safe_elastic_fixed_point<30, -16>, cnl::native_rounding_tag>;
 
     int rounderScale = 10;
     for (uint8_t i = decimals; i > 0; --i) {

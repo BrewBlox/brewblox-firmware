@@ -28,8 +28,6 @@
 #include <sstream>
 #include <vector>
 
-using temp_t = safe_elastic_fixed_point<23, -12>;
-
 SCENARIO("Fixed point filterchain using temp_t")
 {
 
@@ -144,7 +142,7 @@ SCENARIO("Fixed point filterchain using temp_t")
             CHECK(findGainAtPeriod(chain, 1038) > 0.8);
 
             chain = FpFilterChain<temp_t>(6);
-            CHECK(findHalfAmplitudePeriod(chain) == 1546);
+            CHECK(findHalfAmplitudePeriod(chain) == 1545);
             CHECK(findGainAtPeriod(chain, 773) < 0.1);
             CHECK(findGainAtPeriod(chain, 3096) > 0.8);
         }

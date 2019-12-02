@@ -52,7 +52,7 @@ Pid::update()
         m_i = m_integral * safe_elastic_fixed_point<31, -27>(cnl::quotient(m_kp, m_ti));
     }
 
-    m_d = -m_kp * (m_derivative * m_td);
+    m_d = -m_kp * fp12_t(m_derivative * m_td);
 
     auto pidResult = m_p + m_i + m_d;
 
@@ -81,14 +81,15 @@ Pid::update()
                                  // update integral with anti-windup back calculation
                                  // pidResult - output is zero when actuator is not saturated
 
-                    auto antiWindup = integral_t(0);
+                    auto antiWindup = integral_t{0};
                     if (m_kp != 0) { // prevent divide by zero
                         if (pidResult != outputSetting) {
                             // clipped to actuator min or max set in target actuator
                             // calculate anti-windup from setting instead of actual value, so it doesn't dip under the maximum
                             // make sure anti-windup is at least m_error when clipping to prevent further windup, with extra anti-windup to scale back integral
                             out_t excess = cnl::quotient(pidResult - outputSetting, m_kp);
-                            antiWindup = m_error + int8_t(3) * excess; // anti windup gain is 3
+                            out_t correction = int8_t{3} * excess; // anti windup gain is 3
+                            antiWindup = m_error + correction;
                         } else {
                             // Actuator could be not reaching set value due to physics or limits in its target actuator
                             // Get the actual achieved value in actuator. This could differ due to slowness time/mutex limits
@@ -100,11 +101,12 @@ Pid::update()
                                 antiWindup = int8_t(3) * excess; // anti windup gain is 3
 
                                 // Disable anti-windup if integral part dominates. But only if it counteracts p.
-                                if (m_i < 0 && m_p < 0 && m_i < int8_t(3) * m_p) {
-                                    antiWindup = 0;
+                                decltype(m_i) mi_limit = int8_t{3} * m_p;
+                                if (m_p < 0 && m_i < 0 && m_i < mi_limit) {
+                                    antiWindup = integral_t{0};
                                 }
-                                if (m_i > 0 && m_p > 0 && m_i > int8_t(3) * m_p) {
-                                    antiWindup = 0;
+                                if (m_p > 0 && m_i > 0 && m_i > mi_limit) {
+                                    antiWindup = integral_t{0};
                                 }
                             }
                         }
@@ -112,10 +114,10 @@ Pid::update()
 
                     // make sure integral does not cross zero and does not increase by anti-windup
                     integral_t newIntegral = m_integral - antiWindup;
-                    if (m_integral >= 0) {
-                        m_integral = std::clamp(newIntegral, integral_t(0), m_integral);
+                    if (m_integral >= integral_t{0}) {
+                        m_integral = std::clamp(newIntegral, integral_t{0}, m_integral);
                     } else {
-                        m_integral = std::clamp(newIntegral, m_integral, integral_t(0));
+                        m_integral = std::clamp(newIntegral, m_integral, integral_t{0});
                     }
                 }
             }
@@ -128,7 +130,7 @@ Pid::kp(const in_t& arg)
 {
     if (arg != 0) {
         // scale integral history so integral action doesn't change
-        m_integral = m_integral * safe_elastic_fixed_point<31, -16>(cnl::quotient(m_kp, arg));
+        m_integral = m_integral * safe_elastic_fixed_point<30, -15>(cnl::quotient(m_kp, arg));
     }
     m_kp = arg;
 }
@@ -149,5 +151,5 @@ Pid::setIntegral(const out_t& newIntegratorPart)
     if (m_kp == 0) {
         return;
     }
-    m_integral = m_ti * safe_elastic_fixed_point<31, -16>(cnl::quotient(newIntegratorPart, m_kp));
+    m_integral = m_ti * safe_elastic_fixed_point<30, -16>(cnl::quotient(newIntegratorPart, m_kp));
 }

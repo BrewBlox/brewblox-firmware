@@ -486,7 +486,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
             //INFO(t);
             //INFO(s);
 
-            CHECK(to_string_dec(t, 2) == s);
+            REQUIRE(to_string_dec(t, 2) == s);
         }
     }
 }

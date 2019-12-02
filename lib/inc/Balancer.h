@@ -104,7 +104,7 @@ public:
 
     void update()
     {
-        uint8_t numActuators = requesters.size();
+        int8_t numActuators = requesters.size(); // signed, because value_t is signed too
         if (numActuators == 0) {
             return;
         }
