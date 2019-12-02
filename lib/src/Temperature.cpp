@@ -19,13 +19,18 @@
 
 #include "../inc/Temperature.h"
 
+constexpr fp12_t
+scale()
+{
+    return 9.0 / 5.0;
+}
+
 std::string
 tempDiff_to_string(const temp_t& t, uint8_t decimals, const TempUnit& unit)
 {
     fp12_t val = t;
     if (unit == TempUnit::Fahrenheit) {
-        auto scale = fp12_t{9.0 / 5.0};
-        val = t * scale;
+        val = t * scale();
     }
     return to_string_dec(val, decimals);
 }
@@ -35,8 +40,7 @@ temp_to_string(const temp_t& t, uint8_t decimals, const TempUnit& unit)
 {
     fp12_t val = t;
     if (unit == TempUnit::Fahrenheit) {
-        auto scale = fp12_t{9.0 / 5.0};
-        val = fp12_t(cnl::quotient(t, scale)) + fp12_t(32);
+        val = fp12_t(cnl::quotient(t, scale())) + fp12_t(32);
     }
     return to_string_dec(val, decimals);
 }
