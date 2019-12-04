@@ -48,6 +48,7 @@
 #include "cbox/ObjectContainer.h"
 #include "cbox/ObjectFactory.h"
 #include "cbox/spark/SparkEepromAccess.h"
+#include "deviceid_hal.h"
 #include "platforms.h"
 #include <memory>
 
@@ -270,8 +271,8 @@ connectionStarted(DataOut& out)
     out.writeBuffer(header, strlen(header));
     out.writeBuffer(versionCsv(), strlen(versionCsv()));
     out.write(',');
-
     cbox::EncodedDataOut hexOut(out);
+
 #if PLATFORM_ID == 3
     int resetReason = 0;
 #else
@@ -285,6 +286,10 @@ connectionStarted(DataOut& out)
     auto resetData = System.resetReasonData();
 #endif
     hexOut.write(resetData);
+    out.write(',');
+    uint8_t deviceId[12];
+    HAL_device_ID(deviceId, 12);
+    hexOut.writeBuffer(deviceId, 12);
     out.write('>');
 }
 

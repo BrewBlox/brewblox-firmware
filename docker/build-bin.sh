@@ -20,14 +20,14 @@ docker-compose exec -T compiler \
     '
 
 cp ../build/target/brewblox-p1/brewblox.bin "${OUT_DIR}"/brewblox-p1.bin
-curl -sfL -o "${OUT_DIR}"/bootloader-p1.bin ${PARTICLE_RELEASES}/p1-bootloader@${PARTICLE_VERSION}+lto.bin
-curl -sfL -o "${OUT_DIR}"/system-part1-p1.bin ${PARTICLE_RELEASES}/p1-system-part1@${PARTICLE_VERSION}.bin
-curl -sfL -o "${OUT_DIR}"/system-part2-p1.bin ${PARTICLE_RELEASES}/p1-system-part2@${PARTICLE_VERSION}.bin
+curl -fL -o "${OUT_DIR}"/bootloader-p1.bin ${PARTICLE_RELEASES}/p1-bootloader@${PARTICLE_VERSION}+lto.bin
+curl -fL -o "${OUT_DIR}"/system-part1-p1.bin ${PARTICLE_RELEASES}/p1-system-part1@${PARTICLE_VERSION}.bin
+curl -fL -o "${OUT_DIR}"/system-part2-p1.bin ${PARTICLE_RELEASES}/p1-system-part2@${PARTICLE_VERSION}.bin
 
 cp ../build/target/brewblox-photon/brewblox.bin "${OUT_DIR}"/brewblox-photon.bin
-curl -sfL -o "${OUT_DIR}"/bootloader-photon.bin ${PARTICLE_RELEASES}/photon-bootloader@${PARTICLE_VERSION}+lto.bin
-curl -sfL -o "${OUT_DIR}"/system-part1-photon.bin ${PARTICLE_RELEASES}/photon-system-part1@${PARTICLE_VERSION}.bin
-curl -sfL -o "${OUT_DIR}"/system-part2-photon.bin ${PARTICLE_RELEASES}/photon-system-part2@${PARTICLE_VERSION}.bin
+curl -fL -o "${OUT_DIR}"/bootloader-photon.bin ${PARTICLE_RELEASES}/photon-bootloader@${PARTICLE_VERSION}+lto.bin
+curl -fL -o "${OUT_DIR}"/system-part1-photon.bin ${PARTICLE_RELEASES}/photon-system-part1@${PARTICLE_VERSION}.bin
+curl -fL -o "${OUT_DIR}"/system-part2-photon.bin ${PARTICLE_RELEASES}/photon-system-part2@${PARTICLE_VERSION}.bin
 
 FILE="${OUT_DIR}"/firmware.ini
 touch $FILE
