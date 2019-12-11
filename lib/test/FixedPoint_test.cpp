@@ -26,8 +26,8 @@
 #include <type_traits>
 
 using temp_t = safe_elastic_fixed_point<23, -12>;
-using temp_precise_t = safe_elastic_fixed_point<31, -20>;
-using temp_wide_t = safe_elastic_fixed_point<31, -12>;
+using temp_precise_t = safe_elastic_fixed_point<30, -20>;
+using temp_wide_t = safe_elastic_fixed_point<30, -12>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
