@@ -21,9 +21,6 @@
 #include "delay_hal.h"
 #include "pwm_hal.h"
 
-const uint8_t HIGH = 1;
-const uint8_t LOW = 0;
-
 bool
 readAlarmPin()
 {
@@ -55,43 +52,42 @@ boardInit()
 {
 #if PLATFORM_ID == 8 || PLATFORM_ID == 3 // P1 or simulation
     HAL_Pin_Mode(PIN_V3_BOTTOM1, OUTPUT);
-    HAL_Pin_Mode(PIN_V3_BOTTOM2, OUTPUT);
-    HAL_Pin_Mode(PIN_V3_TOP2, OUTPUT);
-    HAL_Pin_Mode(PIN_V3_TOP3, OUTPUT);
+    digitalWriteFast(PIN_V3_BOTTOM1, LOW);
 
-    HAL_GPIO_Write(PIN_V3_BOTTOM1, LOW);
-    HAL_GPIO_Write(PIN_V3_BOTTOM2, LOW);
-    HAL_GPIO_Write(PIN_V3_TOP2, LOW);
-    HAL_GPIO_Write(PIN_V3_TOP3, LOW);
+    HAL_Pin_Mode(PIN_V3_BOTTOM2, OUTPUT);
+    digitalWriteFast(PIN_V3_BOTTOM2, LOW);
 
 #ifdef PIN_V3_TOP1
-    HAL_Pin_Mode(PIN_V3_TOP1, OUTPUT);
-    HAL_GPIO_Write(PIN_V3_TOP1, LOW);
+    HAL_Pin_Mode(PIN_V3_TOP1, INPUT_PULLDOWN);
 #endif
 
 #ifdef PIN_V3_TOP1_DIR
     HAL_Pin_Mode(PIN_V3_TOP1_DIR, OUTPUT);
-    HAL_GPIO_Write(PIN_V3_TOP1_DIR, HIGH); // set as output
+    digitalWriteFast(PIN_V3_TOP1_DIR, LOW); // configure as input
 #endif
+
+    HAL_Pin_Mode(PIN_V3_TOP2, INPUT_PULLDOWN);
 
 #ifdef PIN_V3_TOP2_DIR
     HAL_Pin_Mode(PIN_V3_TOP2_DIR, OUTPUT);
-    HAL_GPIO_Write(PIN_V3_TOP2_DIR, HIGH); // set as output
+    digitalWriteFast(PIN_V3_TOP2_DIR, LOW); // configure as input
 #endif
+
+    HAL_Pin_Mode(PIN_V3_TOP3, OUTPUT);
+    digitalWriteFast(PIN_V3_TOP3, LOW);
 
 #ifdef PIN_12V_ENABLE
     HAL_Pin_Mode(PIN_12V_ENABLE, OUTPUT);
-    // TODO: temporary until 12V can be toggled by software
-    HAL_GPIO_Write(PIN_12V_ENABLE, LOW);
+    digitalWriteFast(PIN_12V_ENABLE, HIGH); // 12V disabled by default
 #endif
 
 #ifdef PIN_5V_ENABLE
     HAL_Pin_Mode(PIN_5V_ENABLE, OUTPUT);
     // 5V on RJ12 enabled by default, 12V disabled to prevent damaging wrongly connected peripherals
-    HAL_GPIO_Write(PIN_5V_ENABLE, LOW);
+    digitalWriteFast(PIN_5V_ENABLE, LOW);
 #endif
 
-    HAL_GPIO_Write(PIN_ALARM, LOW);
+    digitalWriteFast(PIN_ALARM, LOW);
 
 #ifdef PIN_LCD_BACKLIGHT
     HAL_Pin_Mode(PIN_LCD_BACKLIGHT, OUTPUT);
@@ -102,15 +98,15 @@ boardInit()
     HAL_Pin_Mode(PIN_ACTUATOR1, OUTPUT);
     HAL_Pin_Mode(PIN_ACTUATOR2, OUTPUT);
     HAL_Pin_Mode(PIN_ACTUATOR3, OUTPUT);
-    HAL_GPIO_Write(PIN_ACTUATOR1, LOW);
-    HAL_GPIO_Write(PIN_ACTUATOR2, LOW);
-    HAL_GPIO_Write(PIN_ACTUATOR3, LOW);
+    digitalWriteFast(PIN_ACTUATOR1, LOW);
+    digitalWriteFast(PIN_ACTUATOR2, LOW);
+    digitalWriteFast(PIN_ACTUATOR3, LOW);
 
     if (getSparkVersion() == SparkVersion::V1) {
-        HAL_GPIO_Write(PIN_ALARM, HIGH); // alarm is inverted on V1
+        digitalWriteFast(PIN_ALARM, HIGH); // alarm is inverted on V1
     } else {
         HAL_Pin_Mode(PIN_ACTUATOR0, OUTPUT); // actuator 0 is not available on V1, but is on V2
-        HAL_GPIO_Write(PIN_ACTUATOR0, LOW);
+        digitalWriteFast(PIN_ACTUATOR0, LOW);
     }
 #endif
 
@@ -121,11 +117,11 @@ boardInit()
     HAL_Pin_Mode(PIN_RS485_RX, INPUT);
     HAL_Pin_Mode(PIN_RS485_TX_EN, OUTPUT);
 
-    HAL_GPIO_Write(PIN_TOUCH_CS, HIGH);
+    digitalWriteFast(PIN_TOUCH_CS, HIGH);
     HAL_Pin_Mode(PIN_TOUCH_CS, OUTPUT);
-    HAL_GPIO_Write(PIN_LCD_CS, HIGH);
+    digitalWriteFast(PIN_LCD_CS, HIGH);
     HAL_Pin_Mode(PIN_LCD_CS, OUTPUT);
-    HAL_GPIO_Write(PIN_SD_CS, HIGH);
+    digitalWriteFast(PIN_SD_CS, HIGH);
     HAL_Pin_Mode(PIN_SD_CS, OUTPUT);
     HAL_Pin_Mode(PIN_LCD_DC, OUTPUT);
     HAL_Pin_Mode(PIN_TOUCH_IRQ, INPUT);
@@ -136,7 +132,7 @@ void
 enablePheripheral5V(bool enabled)
 {
 #if defined(PIN_5V_ENABLE)
-    HAL_GPIO_Write(PIN_5V_ENABLE, enabled);
+    digitalWriteFast(PIN_5V_ENABLE, enabled);
 #endif
 }
 
@@ -144,7 +140,7 @@ void
 enablePheripheral12V(bool enabled)
 {
 #if defined(PIN_12V_ENABLE)
-    HAL_GPIO_Write(PIN_12V_ENABLE, enabled);
+    digitalWriteFast(PIN_12V_ENABLE, enabled);
 #endif
 }
 

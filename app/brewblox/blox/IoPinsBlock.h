@@ -70,7 +70,7 @@ public:
                 } else if (conf == ChannelConfig::ACTIVE_HIGH) {
                     return State::Inactive;
                 } else if (conf == ChannelConfig::Input) {
-                    return digitalRead(pins[channel - 1]) ? State::Active : State::Inactive;
+                    return pinReadFast(pins[channel - 1]) ? State::Active : State::Inactive;
                 }
                 return State::Unknown;
             }
@@ -85,11 +85,11 @@ public:
             switch (config) {
             case ChannelConfig::ACTIVE_HIGH:
                 pinMode(pin, OUTPUT);
-                digitalWrite(pin, HIGH);
+                digitalWriteFast(pin, HIGH);
                 break;
             case ChannelConfig::ACTIVE_LOW:
                 pinMode(pin, OUTPUT);
-                digitalWrite(pin, LOW);
+                digitalWriteFast(pin, LOW);
                 break;
             case ChannelConfig::INPUT:
                 pinMode(pin, INPUT);

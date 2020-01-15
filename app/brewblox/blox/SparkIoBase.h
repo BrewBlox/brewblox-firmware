@@ -24,8 +24,6 @@
 #include "IoArray.h"
 #include "IoArrayHelpers.h"
 #include "blox/Block.h"
-#include "gpio_hal.h"
-#include "pinmap_hal.h"
 
 class SparkIoBase : public IoArray {
 protected:
@@ -42,8 +40,8 @@ public:
     senseChannelImpl(uint8_t channel, State& result) const override final
     {
         auto pin = channelToPin(channel);
-        if (pin >= 0) {
-            result = HAL_GPIO_Read(pin) != 0 ? State::Active : State::Inactive;
+        if (pin != static_cast<decltype(pin)>(-1)) {
+            result = pinReadFast(pin) != 0 ? State::Active : State::Inactive;
             return true;
         }
         return false;
@@ -53,29 +51,34 @@ public:
     writeChannelImpl(uint8_t channel, const ChannelConfig& config) override final
     {
         auto pin = channelToPin(channel);
-        if (pin >= 0) {
+        if (pin != static_cast<decltype(pin)>(-1)) {
 #ifdef PIN_V3_TOP1_DIR
             if (pin == PIN_V3_TOP1) {
-                bool isOutput = config == ChannelConfig::ACTIVE_HIGH || config == ChannelConfig::ACTIVE_LOW;
-                HAL_GPIO_Write(PIN_V3_TOP1_DIR, isOutput);
+                bool isOutput = (config == ChannelConfig::ACTIVE_HIGH || config == ChannelConfig::ACTIVE_LOW);
+                HAL_Pin_Mode(PIN_V3_TOP1_DIR, OUTPUT);
+                digitalWriteFast(PIN_V3_TOP1_DIR, isOutput);
             }
 #endif
-#ifdef PIN_V3_TOP1_DIR
+#ifdef PIN_V3_TOP2_DIR
             if (pin == PIN_V3_TOP2) {
-                bool isOutput = config == ChannelConfig::ACTIVE_HIGH || config == ChannelConfig::ACTIVE_LOW;
-                HAL_GPIO_Write(PIN_V3_TOP2_DIR, isOutput);
+                bool isOutput = (config == ChannelConfig::ACTIVE_HIGH || config == ChannelConfig::ACTIVE_LOW);
+                HAL_Pin_Mode(PIN_V3_TOP2_DIR, OUTPUT);
+                digitalWriteFast(PIN_V3_TOP2_DIR, isOutput);
             }
 #endif
             switch (config) {
             case ChannelConfig::ACTIVE_HIGH:
-                HAL_GPIO_Write(pin, true);
+                HAL_Pin_Mode(pin, OUTPUT);
+                digitalWriteFast(pin, true);
                 break;
             case ChannelConfig::ACTIVE_LOW:
-                HAL_GPIO_Write(pin, false);
+                HAL_Pin_Mode(pin, OUTPUT);
+                digitalWriteFast(pin, false);
                 break;
             case ChannelConfig::INPUT:
             case ChannelConfig::UNUSED:
             case ChannelConfig::UNKNOWN:
+                HAL_Pin_Mode(pin, INPUT_PULLDOWN);
                 break;
             }
             return true;

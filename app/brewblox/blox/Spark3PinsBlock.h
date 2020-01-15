@@ -64,12 +64,12 @@ public:
 
         if (result == cbox::CboxError::OK) {
             // io pins are not writable through this block. They are configured by creating Digital Actuators
-            HAL_GPIO_Write(PIN_ALARM, message.soundAlarm);
+            digitalWriteFast(PIN_ALARM, message.soundAlarm);
 #if defined(PIN_5V_ENABLE)
-            HAL_GPIO_Write(PIN_5V_ENABLE, message.enableIoSupply5V);
+            digitalWriteFast(PIN_5V_ENABLE, message.enableIoSupply5V);
 #endif
 #if defined(PIN_12V_ENABLE)
-            HAL_GPIO_Write(PIN_12V_ENABLE, message.enableIoSupply12V);
+            digitalWriteFast(PIN_12V_ENABLE, message.enableIoSupply12V);
 #endif
         }
         return result;

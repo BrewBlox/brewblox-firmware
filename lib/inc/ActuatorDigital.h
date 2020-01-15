@@ -98,10 +98,18 @@ public:
     void claimChannel()
     {
         if (auto devPtr = m_target()) {
-            if (devPtr->releaseChannel(m_channel)) {
-                if (devPtr->claimChannel(m_desiredChannel, IoArray::ChannelConfig::ACTIVE_LOW)) {
-                    m_channel = m_desiredChannel;
+            if (m_channel != 0) {
+                if (!devPtr->releaseChannel(m_channel)) {
+                    return;
                 }
+            }
+
+            if (m_desiredChannel == 0) {
+                m_channel = 0;
+                return;
+            }
+            if (devPtr->claimChannel(m_desiredChannel, IoArray::ChannelConfig::ACTIVE_LOW)) {
+                m_channel = m_desiredChannel;
             }
         }
     }

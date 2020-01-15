@@ -18,7 +18,8 @@
  */
 
 #include "BrewPiTouch.h"
-#include "spark_wiring.h"
+#include "Board.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <limits.h>
@@ -118,7 +119,7 @@ BrewPiTouch::read12V() const
 bool
 BrewPiTouch::isTouched() const
 {
-    return (digitalRead(pinIRQ) == HIGH ? 0 : 1);
+    return (pinReadFast(pinIRQ) == HIGH ? 0 : 1);
 }
 
 int16_t

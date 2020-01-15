@@ -82,6 +82,7 @@ INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/shared
 INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/services/inc
 INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/src/gcc
 INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/src/newhal
+INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/wiring/inc
 CPPSRC += /platform/spark/device-os/hal/src/gcc/gpio_hal.cpp
 CPPSRC += /platform/spark/device-os/hal/src/gcc/eeprom_hal.cpp
 CPPSRC += /platform/spark/device-os/hal/src/gcc/filesystem.cpp

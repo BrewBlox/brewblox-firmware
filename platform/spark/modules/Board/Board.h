@@ -20,11 +20,27 @@
 #pragma once
 #include "core_hal.h"
 #include "gpio_hal.h"
+#include "spark_wiring_constants.h"
+
 #if PLATFORM_ID == 3
 #include "pinmap_hal.h"
+inline int32_t
+pinReadFast(pin_t pin)
+{
+    return HAL_GPIO_Read(pin);
+}
+
+inline void
+digitalWriteFast(pin_t pin, uint8_t value)
+{
+    HAL_GPIO_Write(pin, value);
+}
 #else
 #include "pinmap_impl.h"
+
+#include "fast_pin.h"
 #endif
+
 #include <array>
 #include <stdint.h>
 
@@ -48,8 +64,8 @@ enum class SparkVersion : uint8_t {
 
 #if !defined(SWD_JTAG_ENABLE)
 #define PIN_V3_TOP1 D4
-#define PIN_V3_TOP1_DIR D3
-#define PIN_V3_TOP2_DIR D5
+#define PIN_V3_TOP1_DIR D5
+#define PIN_V3_TOP2_DIR D3
 #endif
 
 #if !defined(SWD_JTAG_ENABLE) && !defined(SWD_ENABLE)

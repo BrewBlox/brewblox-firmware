@@ -22,20 +22,20 @@
 #include "Buzzer.h"
 #include "Board.h"
 #include "delay_hal.h"
-#include "spark_wiring.h"
+#include "pwm_hal.h"
 
 void
 BuzzerClass::setActive(bool active)
 {
     switch (getSparkVersion()) {
     case SparkVersion::V1:
-        HAL_GPIO_Write(PIN_ALARM, !active);
+        digitalWriteFast(PIN_ALARM, !active);
         break;
     case SparkVersion::V2:
-        HAL_GPIO_Write(PIN_ALARM, active);
+        digitalWriteFast(PIN_ALARM, active);
         break;
     case SparkVersion::V3:
-        analogWrite(PIN_ALARM, active ? 128 : 0, 3000);
+        HAL_PWM_Write_With_Frequency(PIN_ALARM, active ? 128 : 0, 3000);
         break;
     }
 }
