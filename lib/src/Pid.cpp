@@ -49,7 +49,7 @@ Pid::update()
     m_p = m_kp * m_error;
 
     if (m_ti != 0) {
-        m_i = m_integral * safe_elastic_fixed_point<31, -27>(cnl::quotient(m_kp, m_ti));
+        m_i = m_integral * safe_elastic_fixed_point<4, 27>(cnl::quotient(m_kp, m_ti));
     }
 
     m_d = -m_kp * fp12_t(m_derivative * m_td);
@@ -130,7 +130,7 @@ Pid::kp(const in_t& arg)
 {
     if (arg != 0) {
         // scale integral history so integral action doesn't change
-        m_integral = m_integral * safe_elastic_fixed_point<30, -15>(cnl::quotient(m_kp, arg));
+        m_integral = m_integral * safe_elastic_fixed_point<15, 15>(cnl::quotient(m_kp, arg));
     }
     m_kp = arg;
 }
@@ -151,5 +151,5 @@ Pid::setIntegral(const out_t& newIntegratorPart)
     if (m_kp == 0) {
         return;
     }
-    m_integral = m_ti * safe_elastic_fixed_point<30, -16>(cnl::quotient(newIntegratorPart, m_kp));
+    m_integral = m_ti * safe_elastic_fixed_point<14, 16>(cnl::quotient(newIntegratorPart, m_kp));
 }

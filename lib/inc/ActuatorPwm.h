@@ -55,7 +55,7 @@ private:
 
     auto dutyFraction() const
     {
-        return safe_elastic_fixed_point<31, -29>(cnl::quotient(m_dutySetting, maxDuty()));
+        return safe_elastic_fixed_point<2, 29>(cnl::quotient(m_dutySetting, maxDuty()));
     }
 
     // separate flag for manually disabling the pwm actuator

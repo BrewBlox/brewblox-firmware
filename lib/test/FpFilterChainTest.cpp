@@ -64,7 +64,7 @@ SCENARIO("Fixed point filterchain using temp_t")
         };
 
         auto findGainAtPeriod = [&sine](FpFilterChain<temp_t>& c, const uint32_t& period, bool checkMaxDerivative = true) {
-            using derivative_t = safe_elastic_fixed_point<24, -23>;
+            using derivative_t = safe_elastic_fixed_point<1, 23>;
             const temp_t amplIn = 10;
             temp_t max = 0;
             derivative_t maxDerivative = 0;
@@ -178,7 +178,7 @@ SCENARIO("Fixed point filterchain using temp_t")
 
         AND_WHEN("The derivative is requested with a certain period")
         {
-            using derivative_t = safe_elastic_fixed_point<24, -23>;
+            using derivative_t = safe_elastic_fixed_point<1, 23>;
             uint32_t period = 200;
             const temp_t amplIn = period / (2.0 * M_PI); // derivative max 1
 

@@ -120,7 +120,7 @@ public:
         }
         auto budgetLeftPerActuator = value_t(cnl::quotient(budgetLeft, numActuators));
 
-        safe_elastic_fixed_point<31, -21> scale = cnl::quotient(available, requestedTotal);
+        safe_elastic_fixed_point<10, 21> scale = cnl::quotient(available, requestedTotal);
 
         for (auto& a : requesters) {
             a.granted = a.requested * scale;

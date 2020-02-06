@@ -55,7 +55,7 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
 std::string
 to_string_dec2(const fp12_t& t, uint8_t decimals)
 {
-    using calc_t = cnl::set_rounding_t<safe_elastic_fixed_point<30, -16>, cnl::native_rounding_tag>;
+    using calc_t = cnl::set_rounding_t<safe_elastic_fixed_point<14, 16>, cnl::native_rounding_tag>;
 
     int rounderScale = 10;
     for (uint8_t i = decimals; i > 0; --i) {

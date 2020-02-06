@@ -25,9 +25,9 @@
 #include <iomanip>
 #include <type_traits>
 
-using temp_t = safe_elastic_fixed_point<23, -12>;
-using temp_precise_t = safe_elastic_fixed_point<30, -20>;
-using temp_wide_t = safe_elastic_fixed_point<30, -12>;
+using temp_t = safe_elastic_fixed_point<11, 12>;
+using temp_precise_t = safe_elastic_fixed_point<11, 20>;
+using temp_wide_t = safe_elastic_fixed_point<19, 12>;
 
 SCENARIO("CNL fixed point formats", "[fixedpoint]")
 {
@@ -433,7 +433,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
     WHEN("multiplication of 3 temp_t values")
     {
         auto t1 = temp_t(1);
-        auto t2 = safe_elastic_fixed_point<39, -24>(t1 * t1) * t1; // intermediate trunctation is needed to not exceed 64 bits
+        auto t2 = safe_elastic_fixed_point<15, 24>(t1 * t1) * t1; // intermediate trunctation is needed to not exceed 64 bits
 
         CHECK(t2 == 1.0);
 

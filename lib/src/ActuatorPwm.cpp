@@ -270,7 +270,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             m_dutyAchieved = value_t{0};
         } else {
             // calculate achieved duty cycle
-            value_t dutyAchieved = maxDuty() * safe_elastic_fixed_point<31, -24>(cnl::quotient(twoPeriodHighTime, twoPeriodElapsed));
+            value_t dutyAchieved = maxDuty() * safe_elastic_fixed_point<7, 24>(cnl::quotient(twoPeriodHighTime, twoPeriodElapsed));
             if (toggled // end of high or low time or
                         // current period is long enough to start using the current achieved value including this period
                 || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)

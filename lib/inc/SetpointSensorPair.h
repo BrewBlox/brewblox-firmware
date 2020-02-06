@@ -32,7 +32,7 @@
  */
 class SetpointSensorPair : public ProcessValue<temp_t> {
 public:
-    using derivative_t = safe_elastic_fixed_point<24, -23>;
+    using derivative_t = safe_elastic_fixed_point<1, 23>;
 
 private:
     temp_t m_setting = 20;

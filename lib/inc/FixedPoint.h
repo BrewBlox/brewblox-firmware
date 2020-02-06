@@ -21,19 +21,20 @@ string to_string(T);
 #include <cstdint>
 
 template <
-    int Digits,
-    int Exponent>
+    int IntegerDigits,
+    int FractionalDigits,
+    class Narrowest = int32_t>
 using safe_elastic_fixed_point = cnl::scaled_integer<
-    cnl::overflow_integer<
-        cnl::elastic_integer<
-            Digits,
-            cnl::rounding_integer<
-                int32_t,
-                cnl::nearest_rounding_tag>>,
-        cnl::saturated_overflow_tag>,
-    cnl::power<Exponent>>;
+    cnl::elastic_integer<
+        IntegerDigits + FractionalDigits,
+        cnl::rounding_integer<
+            cnl::overflow_integer<
+                Narrowest,
+                cnl::saturated_overflow_tag>,
+            cnl::nearest_rounding_tag>>,
+    cnl::power<-FractionalDigits>>;
 
-using fp12_t = safe_elastic_fixed_point<23, -12>;
+using fp12_t = safe_elastic_fixed_point<11, 12>;
 
 std::string
 to_string_dec(const fp12_t& t, uint8_t decimals);

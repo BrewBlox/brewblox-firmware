@@ -46,7 +46,7 @@ SetpointProfile::update(const utc_seconds_t& time)
             auto lower = upper - 1;
             auto segmentElapsed = elapsed - lower->time;
             auto segmentDuration = upper->time - lower->time;
-            auto fraction = safe_elastic_fixed_point<31, -30>(cnl::quotient(segmentElapsed, segmentDuration));
+            auto fraction = safe_elastic_fixed_point<1, 30>(cnl::quotient(segmentElapsed, segmentDuration));
             auto interpolated = lower->temp + temp_t((upper->temp - lower->temp) * fraction);
             newTemp = interpolated;
         } else {

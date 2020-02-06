@@ -13,7 +13,7 @@ template <
     typename Narrowest = signed>
 using safe_elastic_fixed_point = cnl::static_number<Digits, Exponent, cnl::native_rounding_tag, cnl::saturated_overflow_tag, Narrowest>;
 
-using fp12_t = safe_elastic_fixed_point<23, -12>;
+using fp12_t = safe_elastic_fixed_point<11, 12>;
 
 template <class T>
 constexpr const T&
