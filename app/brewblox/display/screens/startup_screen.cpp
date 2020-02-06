@@ -19,6 +19,7 @@
 
 #include "startup_screen.h"
 #include "../fonts/fonts.h"
+#include "../logo/brewblox_logo.h"
 #include "BrewBlox.h"
 #include "blox/stringify.h"
 #include "d4d.hpp"
@@ -33,28 +34,28 @@ extern BrewPiTouch touch;
 #ifndef GIT_VERSION
 #error GIT_VERSION not set
 #endif
-
+#ifndef GIT_DATE
+#error GIT_DATE not set
+#endif
 char stepTxt[32] = "Init board";
-char versionString[] = "BrewBlox " stringify(GIT_VERSION);
+char versionString[] = "version: " stringify(GIT_VERSION) " (" stringify(GIT_DATE) ")";
 
-D4D_DECLARE_STD_LABEL(scrStartup_version, versionString, 0, 140, 320, 15, FONT_REGULAR)
-D4D_DECLARE_STD_PROGRESS_BAR(scrStartup_progress, 80, 160, 160, 12, 0)
-D4D_DECLARE_STD_LABEL(scrStartup_step, stepTxt, 0, 180, 320, 15, FONT_REGULAR)
-
-char calibrate_str[] = "Tap screen to re-calibrate touch";
-D4D_DECLARE_STD_LABEL(scrStartup_txt_calibrate, calibrate_str, 0, 210, 320, 15, FONT_REGULAR)
+D4D_DECLARE_STD_PICTURE(scrStartup_logo, 70, 100, 180, 34, &bmp_brewblox_logo)
+D4D_DECLARE_STD_LABEL(scrStartup_step, stepTxt, 0, 193, 320, 15, FONT_REGULAR)
+D4D_DECLARE_STD_PROGRESS_BAR(scrStartup_progress, 0, 212, 320, 12, 0)
+D4D_DECLARE_STD_LABEL(scrStartup_version, versionString, 0, 224, 320, 15, FONT_REGULAR)
 
 D4D_DECLARE_SCREEN_BEGIN(screen_startup, ScrStartup_, 0, 0, (D4D_COOR)(D4D_SCREEN_SIZE_LONGER_SIDE), (D4D_COOR)(D4D_SCREEN_SIZE_SHORTER_SIDE), nullptr, 0, nullptr, (D4D_SCR_F_DEFAULT | D4D_SCR_F_TOUCHENABLE), nullptr)
+D4D_DECLARE_SCREEN_OBJECT(scrStartup_logo)
 D4D_DECLARE_SCREEN_OBJECT(scrStartup_version)
 D4D_DECLARE_SCREEN_OBJECT(scrStartup_progress)
 D4D_DECLARE_SCREEN_OBJECT(scrStartup_step)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_txt_calibrate)
 D4D_DECLARE_SCREEN_END()
 
 void
 StartupScreen::activate()
 {
-    D4D_EnableObject(&scrStartup_txt_calibrate, D4D_FALSE);
+    D4D_EnableObject(&scrStartup_version, D4D_FALSE);
     D4D_ActivateScreen(&screen_startup, D4D_TRUE);
 }
 
