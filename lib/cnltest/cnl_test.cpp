@@ -1,17 +1,29 @@
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp> // ensure that this is the single_include version
 
+#define CNL_USE_INT128 false
+
+#include "../cnl/include/cnl/elastic_integer.h"
 #include "../cnl/include/cnl/num_traits.h"
-#include "../cnl/include/cnl/static_number.h"
-#include <catch.hpp>
+#include "../cnl/include/cnl/overflow_integer.h"
+#include "../cnl/include/cnl/rounding_integer.h"
+#include "../cnl/include/cnl/scaled_integer.h"
 #include <cstdint>
 #include <limits>
 
 template <
-    int Digits,
-    int Exponent,
-    typename Narrowest = signed>
-using safe_elastic_fixed_point = cnl::static_number<Digits, Exponent, cnl::native_rounding_tag, cnl::saturated_overflow_tag, Narrowest>;
+    int IntegerDigits,
+    int FractionalDigits,
+    class Narrowest = int32_t>
+using safe_elastic_fixed_point = cnl::scaled_integer<
+    cnl::elastic_integer<
+        IntegerDigits + FractionalDigits,
+        cnl::rounding_integer<
+            cnl::overflow_integer<
+                Narrowest,
+                cnl::saturated_overflow_tag>,
+            cnl::nearest_rounding_tag>>,
+    cnl::power<-FractionalDigits>>;
 
 using fp12_t = safe_elastic_fixed_point<11, 12>;
 
@@ -44,7 +56,7 @@ TEST_CASE("Fixedpoint calculations", "[cnltest]")
 
             REQUIRE(c < decltype(c)(max * max));
             REQUIRE(d >= 0);
-            if (c >= decltype(c)(4096)) {
+            if (c >= decltype(c)(2048)) {
                 REQUIRE(cnl::unwrap(d) == (int64_t(1) << 23) - 1);
             };
         }
