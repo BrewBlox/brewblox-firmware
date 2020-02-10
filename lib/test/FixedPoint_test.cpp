@@ -146,7 +146,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
 
         auto t3 = t1 * t2;
         temp_t t4 = t3;
-        CHECK(t3 == decltype(t3){14400});
+        CHECK(t3 == decltype(t3){14400.0});
         CHECK(t4 == cnl::numeric_limits<temp_t>::max());
 
         t1 = short(-120);
@@ -154,7 +154,7 @@ SCENARIO("CNL fixed point formats", "[fixedpoint]")
         auto t5 = t1 * t2;
         temp_t t6 = t5;
 
-        CHECK(t5 == decltype(t5){-14400});
+        CHECK(t5 == decltype(t5){-14400.0});
         CHECK(t6 == cnl::numeric_limits<temp_t>::lowest());
     }
 

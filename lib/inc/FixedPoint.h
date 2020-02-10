@@ -18,6 +18,7 @@ string to_string(T);
 #include "../cnl/include/cnl/overflow_integer.h"
 #include "../cnl/include/cnl/rounding_integer.h"
 #include "../cnl/include/cnl/scaled_integer.h"
+#include "../cnl/include/cnl/wide_integer.h"
 #include <cstdint>
 
 template <
@@ -25,13 +26,15 @@ template <
     int FractionalDigits,
     class Narrowest = int32_t>
 using safe_elastic_fixed_point = cnl::scaled_integer<
-    cnl::elastic_integer<
-        IntegerDigits + FractionalDigits,
-        cnl::rounding_integer<
-            cnl::overflow_integer<
-                Narrowest,
-                cnl::saturated_overflow_tag>,
-            cnl::nearest_rounding_tag>>,
+    cnl::overflow_integer<
+        cnl::elastic_integer<
+            IntegerDigits + FractionalDigits,
+            cnl::rounding_integer<
+                cnl::wide_integer<
+                    cnl::digits_v<Narrowest>,
+                    Narrowest>,
+                cnl::nearest_rounding_tag>>,
+        cnl::saturated_overflow_tag>,
     cnl::power<-FractionalDigits>>;
 
 using fp12_t = safe_elastic_fixed_point<11, 12>;
