@@ -34,7 +34,7 @@ to_string_dec(const fp12_t& t, uint8_t decimals)
     }
 
     auto rounder = (t >= 0) ? calc_t{0.5} : calc_t{-0.5};
-    auto asInt = static_cast<int64_t>(scale * calc_t{t} + rounder);
+    auto asInt = static_cast<int32_t>(scale * calc_t{t} + rounder);
     auto s = std::to_string(asInt);
 
     int missingZeros = int(decimals) + 1 - s.length() + (asInt < 0);
