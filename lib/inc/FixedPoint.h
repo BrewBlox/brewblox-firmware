@@ -13,7 +13,11 @@ string to_string(T);
 
 #define CNL_USE_INT128 false
 
-#include "../cnl/include/cnl/all.h"
+#include "../cnl/include/cnl/elastic_integer.h"
+#include "../cnl/include/cnl/num_traits.h"
+#include "../cnl/include/cnl/overflow_integer.h"
+#include "../cnl/include/cnl/scaled_integer.h"
+#include "../cnl/include/cnl/wide_integer.h"
 #include <cstdint>
 
 template <
@@ -24,11 +28,9 @@ using safe_elastic_fixed_point = cnl::scaled_integer<
     cnl::overflow_integer<
         cnl::elastic_integer<
             IntegerDigits + FractionalDigits,
-            cnl::rounding_integer<
-                cnl::wide_integer<
-                    cnl::digits_v<Narrowest>,
-                    Narrowest>,
-                cnl::native_rounding_tag>>,
+            cnl::wide_integer<
+                cnl::digits_v<Narrowest>,
+                Narrowest>>,
         cnl::saturated_overflow_tag>,
     cnl::power<-FractionalDigits>>;
 
