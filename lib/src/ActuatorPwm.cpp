@@ -143,7 +143,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         if (previousPeriod < m_period) {
             auto shortenedBy = m_period - durations.previousPeriod;
             previousPeriod = m_period;
-            previousHighTime += ticks_millis_t(shortenedBy * dutyFraction());
+            previousHighTime += ticks_millis_t(shortenedBy * dutyFraction()) + 1;
         }
         auto twoPeriodElapsed = previousPeriod + currentPeriod;
 
@@ -270,7 +270,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             m_dutyAchieved = value_t{0};
         } else {
             // calculate achieved duty cycle
-            value_t dutyAchieved = maxDuty() * safe_elastic_fixed_point<7, 24>(cnl::quotient(twoPeriodHighTime, twoPeriodElapsed));
+            value_t dutyAchieved = cnl::wrap<value_t>((int64_t(cnl::unwrap(maxDuty())) * twoPeriodHighTime + twoPeriodElapsed / 2) / twoPeriodElapsed);
             if (toggled // end of high or low time or
                         // current period is long enough to start using the current achieved value including this period
                 || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)
