@@ -18,10 +18,6 @@
  */
 
 #include "FixedPoint.h"
-#include "Logger.h"
-#include <algorithm>
-#include <cstring>
-#include <stdlib.h>
 
 std::string
 to_string_dec(const fp12_t& t, uint8_t decimals)
