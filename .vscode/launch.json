@@ -9,7 +9,9 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/target/brewblox-gcc/brewblox",
-      "args": ["-i123456789012345678901234"],
+      "args": [
+        "-i123456789012345678901234"
+      ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/build/target/brewblox-gcc",
       "environment": [],
@@ -23,7 +25,6 @@
         }
       ],
       "miDebuggerArgs": "-x ~/repos/firmware/tools/pretty.gdbinit",
-      "preLaunchTask": "build_and_touch_gcc"
     },
     {
       "name": "gdb lib test",
@@ -107,7 +108,6 @@
         }
       ]
     },
-
     {
       "name": "brewblox p1 openocd debug",
       "type": "cortex-debug",

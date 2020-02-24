@@ -245,13 +245,6 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             }
             if (currentState != actPtr->state()) {
                 toggled = true;
-            } else if (currentState == State::Inactive && m_dutySetting < 5) {
-                // for duty cycle under 5%, set output to inactive explicitly to cancel any pending active state
-                // when the toggle was blocked. This prevents a low duty cycle to create a lingering pending active state in the mutex
-                // The PWM will continue to try to activate the pin
-                actPtr->desiredState(State::Inactive, now);
-                // increase wait time to not keep retrying each millisecond
-                wait = std::min(duration_millis_t(1000), m_period >> 5);
             }
         }
 

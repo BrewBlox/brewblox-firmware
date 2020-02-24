@@ -27,70 +27,7 @@
 #include <mutex>
 #include <vector>
 
-class TimedMutex {
-private:
-    std::mutex m_mutex;
-    duration_millis_t m_differentActuatorWait = 0;
-    duration_millis_t m_waitRemaining = 0;
-    ticks_millis_t lastActive = 0;
-
-    ticks_millis_t lastUpdate = 0;
-    const ActuatorDigitalChangeLogged* lastActuator = nullptr;
-
-public:
-    TimedMutex() = default;
-    ~TimedMutex() = default;
-
-    bool try_lock(const ActuatorDigitalChangeLogged& act)
-    {
-        auto allowed = m_mutex.try_lock();
-        if (allowed && lastActuator != &act && lastActuator != nullptr) {
-            // also check minimum wait time if last actuator that was active was not requester
-            if (m_waitRemaining) {
-                m_mutex.unlock();
-                allowed = false;
-            }
-        }
-        return allowed;
-    }
-
-    void unlock(const ActuatorDigitalChangeLogged& act)
-    {
-        if (act.state() == ActuatorDigitalChangeLogged::State::Active) {
-            lastActive = lastUpdate;
-            lastActuator = &act;
-            update(lastUpdate);
-        }
-        m_mutex.unlock();
-    }
-
-    duration_millis_t differentActuatorWait() const
-    {
-        return m_differentActuatorWait;
-    }
-
-    duration_millis_t waitRemaining() const
-    {
-        return m_waitRemaining;
-    }
-
-    void differentActuatorWait(const duration_millis_t& v)
-    {
-        m_differentActuatorWait = v;
-    }
-
-    void update(const ticks_millis_t& now)
-    {
-        lastUpdate = now;
-        auto elapsed = now - lastActive;
-        if (lastActuator == nullptr || elapsed > m_differentActuatorWait) {
-            m_waitRemaining = 0;
-        } else {
-            m_waitRemaining = m_differentActuatorWait - elapsed;
-        }
-    }
-};
-
+class ActuatorDigitalConstrained;
 namespace ADConstraints {
 using State = ActuatorDigitalBase::State;
 
@@ -105,133 +42,6 @@ public:
 
     virtual uint8_t order() const = 0;
 };
-
-template <uint8_t ID>
-class MinOnTime : public Base {
-private:
-    duration_millis_t m_limit;
-
-public:
-    MinOnTime(const duration_millis_t& min)
-        : m_limit(min)
-    {
-    }
-
-    bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
-    {
-        if (act.state() != State::Active) {
-            return true;
-        }
-        auto times = act.getLastStartEndTime(State::Active, now);
-        return newState == State::Active || times.end - times.start >= m_limit;
-    }
-
-    virtual uint8_t id() const override final
-    {
-        return ID;
-    }
-
-    duration_millis_t limit()
-    {
-        return m_limit;
-    }
-
-    virtual uint8_t order() const override final
-    {
-        return 1;
-    }
-};
-
-template <uint8_t ID>
-class MinOffTime : public Base {
-private:
-    duration_millis_t m_limit;
-
-public:
-    MinOffTime(const duration_millis_t& min)
-        : m_limit(min)
-    {
-    }
-
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
-    {
-        if (act.state() != State::Inactive) {
-            return true;
-        }
-        auto times = act.getLastStartEndTime(State::Inactive, now);
-        return newState == State::Inactive || times.end - times.start >= m_limit;
-    }
-
-    virtual uint8_t id() const override final
-    {
-        return ID;
-    }
-
-    duration_millis_t limit()
-    {
-        return m_limit;
-    }
-
-    virtual uint8_t order() const override final
-    {
-        return 0;
-    }
-};
-
-template <uint8_t ID>
-class Mutex : public Base {
-private:
-    const std::function<std::shared_ptr<TimedMutex>()> m_mutex;
-    bool hasLock = false;
-
-public:
-    explicit Mutex(
-        std::function<std::shared_ptr<TimedMutex>()>&& mut)
-        : m_mutex(mut)
-    {
-    }
-    ~Mutex() = default;
-
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
-    {
-        if (newState == State::Inactive) {
-            // always allow switching OFF, but release mutex
-            if (act.state() == State::Active || hasLock) {
-                if (auto mutPtr = m_mutex()) {
-                    mutPtr->unlock(act);
-                    hasLock = false;
-                }
-            }
-            return true;
-        }
-
-        if (newState == State::Active) {
-            if (hasLock) {
-                return true; // already owner of lock
-            }
-
-            if (auto mutPtr = m_mutex()) {
-                if (act.state() != State::Active && newState == State::Active) {
-                    // if turning on, try to acquire mutex
-                    hasLock = mutPtr->try_lock(act);
-                    return hasLock;
-                }
-            }
-        }
-        return false;
-    }
-
-    virtual uint8_t id() const override final
-    {
-        return ID;
-    }
-
-    virtual uint8_t order() const override final
-    {
-        return 2;
-    }
-};
-
 } // end namespace ADConstraints
 
 class ActuatorDigitalConstrained : private ActuatorDigitalChangeLogged {
@@ -249,8 +59,8 @@ public:
 
     ActuatorDigitalConstrained(const ActuatorDigitalConstrained&) = delete;
     ActuatorDigitalConstrained& operator=(const ActuatorDigitalConstrained&) = delete;
+    ActuatorDigitalConstrained& operator=(ActuatorDigitalConstrained&&) = delete;
     ActuatorDigitalConstrained(ActuatorDigitalConstrained&&) = default;
-    ActuatorDigitalConstrained& operator=(ActuatorDigitalConstrained&&) = default;
 
     virtual ~ActuatorDigitalConstrained() = default;
 
@@ -334,3 +144,148 @@ public:
         return constraints;
     };
 };
+
+class MutexTarget {
+public:
+    MutexTarget() = default;
+    ~MutexTarget() = default;
+    std::mutex mut;
+};
+
+namespace ADConstraints {
+template <uint8_t ID>
+class MinOnTime : public Base {
+private:
+    duration_millis_t m_limit;
+
+public:
+    MinOnTime(const duration_millis_t& min)
+        : m_limit(min)
+    {
+    }
+
+    bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    {
+        if (act.state() != State::Active) {
+            return true;
+        }
+        auto times = act.getLastStartEndTime(State::Active, now);
+        return newState == State::Active || times.end - times.start >= m_limit;
+    }
+
+    virtual uint8_t id() const override final
+    {
+        return ID;
+    }
+
+    duration_millis_t limit()
+    {
+        return m_limit;
+    }
+
+    virtual uint8_t order() const override final
+    {
+        return 1;
+    }
+};
+
+template <uint8_t ID>
+class MinOffTime : public Base {
+private:
+    duration_millis_t m_limit;
+
+public:
+    MinOffTime(const duration_millis_t& min)
+        : m_limit(min)
+    {
+    }
+
+    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    {
+        if (act.state() != State::Inactive) {
+            return true;
+        }
+        auto times = act.getLastStartEndTime(State::Inactive, now);
+        auto elapsedOff = times.end - times.start;
+        return newState == State::Inactive || elapsedOff >= m_limit;
+    }
+
+    virtual uint8_t id() const override final
+    {
+        return ID;
+    }
+
+    duration_millis_t limit()
+    {
+        return m_limit;
+    }
+
+    virtual uint8_t order() const override final
+    {
+        return 0;
+    }
+};
+
+template <uint8_t ID>
+class Mutex : public Base {
+private:
+    const std::function<std::shared_ptr<MutexTarget>()> m_mutexTarget;
+    uint16_t holdAfterTurnOff = 0;
+    std::shared_ptr<MutexTarget> m_lockedMutex; // keep shared pointer to mutex, so it cannot be destroyed while locked
+    std::unique_lock<std::mutex> m_lock;
+
+public:
+    explicit Mutex(
+        std::function<std::shared_ptr<MutexTarget>()>&& mut, uint16_t hold)
+        : m_mutexTarget(mut)
+        , holdAfterTurnOff(hold)
+    {
+    }
+    ~Mutex() = default;
+
+    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    {
+        if (m_lock) {
+            // already owner of lock.
+            if (newState == State::Inactive) {
+                // Release lock if actuator has been off for minimal time
+                auto times = act.getLastStartEndTime(State::Inactive, now);
+                auto elapsedOff = times.end - times.start;
+                if (elapsedOff >= holdAfterTurnOff) {
+                    m_lock.unlock();
+                    m_lockedMutex.reset();
+                }
+            }
+            return true;
+        }
+        if (newState == State::Inactive) {
+            // no locked, but no lock needed
+            return true;
+        }
+        if (newState == State::Active) {
+            m_lockedMutex = m_mutexTarget(); // store shared pointer to target so it can't be deleted while locked
+            if (m_lockedMutex) {
+                m_lock = std::unique_lock<std::mutex>(m_lockedMutex->mut, std::try_to_lock);
+                if (m_lock) {
+                    // successfully aquired lock of target
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    virtual uint8_t
+    id() const override final
+    {
+        return ID;
+    }
+
+    virtual uint8_t
+    order() const override final
+    {
+        return 2;
+    }
+};
+
+} // end namespace ADConstraints
