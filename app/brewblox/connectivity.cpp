@@ -32,6 +32,7 @@ volatile bool wifiIsConnected = false;
 
 auto mdns = MDNS();
 volatile bool mdns_started = false;
+volatile bool http_started = false;
 #if PLATFORM_ID == PLATFORM_GCC
 auto httpserver = TCPServer(8380); // listen on 8380 to serve a simple page with instructions
 #else
@@ -102,25 +103,35 @@ manageConnections(uint32_t now)
     if (wifiIsConnected) {
         if (!mdns_started) {
             mdns_started = mdns.begin(true);
-        } else {
+        }
+        if (!http_started) {
+            http_started = httpserver.begin();
+        }
+
+        if (mdns_started) {
             mdns.processQueries();
         }
-        TCPClient client = httpserver.available();
-        if (client) {
-            while (client.read() != -1) {
-            }
+        if (http_started) {
+            TCPClient client = httpserver.available();
+            if (client) {
+                while (client.read() != -1) {
+                }
 
-            client.write("HTTP/1.1 200 Ok\n\n<html><body>"
-                         "<p>Your BrewBlox Spark is online but it does not run its own web server. "
-                         "Please install a BrewBlox server to connect to it using the BrewBlox protocol.</p>"
-                         "<p>Device ID = ");
-            client.write(System.deviceID());
-            client.write("</p></body></html>\n\n");
-            client.flush();
-            HAL_Delay_Milliseconds(5);
-            client.stop();
+                client.write("HTTP/1.1 200 Ok\n\n<html><body>"
+                             "<p>Your BrewBlox Spark is online but it does not run its own web server. "
+                             "Please install a BrewBlox server to connect to it using the BrewBlox protocol.</p>"
+                             "<p>Device ID = ");
+                client.write(System.deviceID());
+                client.write("</p></body></html>\n\n");
+                client.flush();
+                HAL_Delay_Milliseconds(5);
+                client.stop();
+            }
+            return;
         }
-        return;
+    } else {
+        mdns_started = false;
+        http_started = false;
     }
     if (now - lastConnect > 60000) {
         // after 60 seconds without WiFi, trigger reconnect
