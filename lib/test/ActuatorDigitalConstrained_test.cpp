@@ -104,12 +104,14 @@ SCENARIO("Mutex contraint", "[constraints]")
         [&mut]() {
             return mut;
         },
-        0));
+        0,
+        true));
     constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [&mut]() {
             return mut;
         },
-        0));
+        0,
+        true));
 
     WHEN("Two actuators share a mutex, they cannot be active at the same time")
     {
@@ -144,7 +146,7 @@ SCENARIO("Mutex contraint", "[constraints]")
         CHECK(constrained2.state() == State::Inactive);
     }
 
-    WHEN("A minimum switch time of 1000 is set on the mutex constraints and actuator 1 was active before")
+    WHEN("An extra hold time of 1000 is set on actuator 1, and it was active earlier")
     {
         constrained1.removeAllConstraints();
         constrained2.removeAllConstraints();
@@ -152,12 +154,12 @@ SCENARIO("Mutex contraint", "[constraints]")
             [&mut]() {
                 return mut;
             },
-            1000));
+            1000, true));
         constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
             [&mut]() {
                 return mut;
             },
-            1000));
+            0, true));
 
         constrained1.desiredState(State::Active, ++now);
         CHECK(constrained1.state() == State::Active);
@@ -182,6 +184,14 @@ SCENARIO("Mutex contraint", "[constraints]")
                 constrained2.update(now);
             }
             CHECK(now == 1002);
+
+            AND_THEN("Actuar 2 does not hold the mutex longer after turn off")
+            {
+                constrained2.desiredState(State::Inactive, ++now);
+                constrained1.desiredState(State::Active, ++now);
+                CHECK(constrained1.state() == State::Active);
+                CHECK(constrained2.state() == State::Inactive);
+            }
         }
 
         THEN("Toggling actuator 1 again resets the wait time")
@@ -205,6 +215,60 @@ SCENARIO("Mutex contraint", "[constraints]")
             }
 
             CHECK(now == 1502);
+        }
+    }
+
+    WHEN("A default extra hold time of 1000ms is set on the Mutex and only act 2 has a custom hold time of 100ms")
+    {
+        mut->holdAfterTurnOff(1000);
+
+        constrained1.removeAllConstraints();
+        constrained2.removeAllConstraints();
+        constrained1.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            0, false));
+        constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            100, true));
+
+        constrained1.desiredState(State::Active, ++now);
+        CHECK(constrained1.state() == State::Active);
+
+        constrained1.desiredState(State::Inactive, ++now);
+        CHECK(constrained1.state() == State::Inactive);
+
+        THEN("Actuator 2 has to wait until actuator 1 has been inactive for 1000ms")
+        {
+            constrained2.desiredState(State::Active, ++now);
+            CHECK(constrained2.state() == State::Inactive);
+
+            while (constrained2.state() != State::Active && now < 2000) {
+                ++now;
+                constrained1.update(now);
+                constrained2.update(now);
+            }
+            CHECK(now == 1002);
+            CHECK(constrained1.state() == State::Inactive);
+            CHECK(constrained2.state() == State::Active);
+
+            WHEN("Actuator 2 turns off, it holds the mutex for 100ms")
+            {
+                constrained2.desiredState(State::Inactive, ++now);
+                constrained1.desiredState(State::Active, ++now);
+                CHECK(constrained1.state() == State::Inactive);
+                CHECK(constrained2.state() == State::Inactive);
+
+                while (constrained1.state() != State::Active && now < 2000) {
+                    ++now;
+                    constrained1.update(now);
+                    constrained2.update(now);
+                }
+                CHECK(now == 1104);
+            }
         }
     }
 

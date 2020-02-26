@@ -648,12 +648,14 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
         [mut]() {
             return mut;
         },
-        0));
+        0,
+        true));
     constrainedMock2->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [mut]() {
             return mut;
         },
-        0));
+        0,
+        true));
 
     auto checkDuties = [&](value_t duty1, value_t duty2, double expected1, double expected2) {
         auto timeHigh1 = duration_millis_t(0);
@@ -755,13 +757,15 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
             [mut]() {
                 return mut;
             },
-            5 * period));
+            5 * period,
+            true));
         constrainedMock2->removeAllConstraints();
         constrainedMock2->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
             [mut]() {
                 return mut;
             },
-            5 * period));
+            5 * period,
+            true));
 
         auto start = now;
         auto turnOffPwm1 = now + 50 * period;

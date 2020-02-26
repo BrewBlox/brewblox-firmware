@@ -150,6 +150,17 @@ public:
     MutexTarget() = default;
     ~MutexTarget() = default;
     std::mutex mut;
+    duration_millis_t m_holdAfterTurnOff = 0;
+
+    duration_millis_t holdAfterTurnOff() const
+    {
+        return m_holdAfterTurnOff;
+    }
+
+    void holdAfterTurnOff(duration_millis_t v)
+    {
+        m_holdAfterTurnOff = v;
+    }
 };
 
 namespace ADConstraints {
@@ -230,15 +241,18 @@ template <uint8_t ID>
 class Mutex : public Base {
 private:
     const std::function<std::shared_ptr<MutexTarget>()> m_mutexTarget;
-    uint16_t holdAfterTurnOff = 0;
-    std::shared_ptr<MutexTarget> m_lockedMutex; // keep shared pointer to mutex, so it cannot be destroyed while locked
+    duration_millis_t m_holdAfterTurnOff;
+    bool m_useCustomHoldDuration;
+    // keep shared pointer to mutex, so it cannot be destroyed while locked
+    std::shared_ptr<MutexTarget> m_lockedMutex;
     std::unique_lock<std::mutex> m_lock;
 
 public:
     explicit Mutex(
-        std::function<std::shared_ptr<MutexTarget>()>&& mut, uint16_t hold)
+        std::function<std::shared_ptr<MutexTarget>()>&& mut, duration_millis_t hold, bool useCustomHold)
         : m_mutexTarget(mut)
-        , holdAfterTurnOff(hold)
+        , m_holdAfterTurnOff(hold)
+        , m_useCustomHoldDuration(useCustomHold)
     {
     }
     ~Mutex() = default;
@@ -249,9 +263,13 @@ public:
             // already owner of lock.
             if (newState == State::Inactive) {
                 // Release lock if actuator has been off for minimal time
-                auto times = act.getLastStartEndTime(State::Inactive, now);
-                auto elapsedOff = times.end - times.start;
-                if (elapsedOff >= holdAfterTurnOff) {
+                duration_millis_t elapsedOff = 0;
+                if (act.state() == State::Inactive) {
+                    auto times = act.getLastStartEndTime(State::Inactive, now);
+                    elapsedOff = times.end - times.start;
+                }
+                auto elapsedMinimal = m_useCustomHoldDuration ? m_holdAfterTurnOff : m_lockedMutex->holdAfterTurnOff();
+                if (elapsedOff >= elapsedMinimal) {
                     m_lock.unlock();
                     m_lockedMutex.reset();
                 }
