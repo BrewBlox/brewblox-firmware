@@ -80,9 +80,12 @@ public:
                   [](const std::unique_ptr<Constraint>& a, const std::unique_ptr<Constraint>& b) { return a->order() < b->order(); });
     }
 
-    void removeAllConstraints()
+    // remove all constraints and return vector of removed constraints
+    auto removeAllConstraints()
     {
-        constraints.clear();
+        auto oldConstraints = std::move(constraints);
+        constraints = std::vector<std::unique_ptr<Constraint>>();
+        return oldConstraints;
     }
 
     void resetHistory()
@@ -291,6 +294,26 @@ public:
             }
         }
         return false;
+    }
+
+    auto holdAfterTurnOff()
+    {
+        return m_holdAfterTurnOff;
+    }
+
+    void holdAfterTurnOff(duration_millis_t v)
+    {
+        m_holdAfterTurnOff = v;
+    }
+
+    bool useCustomHoldDuration()
+    {
+        return m_useCustomHoldDuration;
+    }
+
+    void useCustomHoldDuration(bool v)
+    {
+        m_useCustomHoldDuration = v;
     }
 
     virtual uint8_t
