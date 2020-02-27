@@ -220,6 +220,25 @@ SCENARIO("Mutex contraint", "[constraints]")
 
             CHECK(now == 1502);
         }
+
+        THEN("When the Mutex target is unavailable the actuators cannot go active, but already active actuators will reference their old mutex until it unlocks")
+        {
+            mut.reset();
+            constrained1.desiredState(State::Active, ++now);
+            constrained2.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Active);
+            CHECK(constrained2.state() == State::Inactive);
+
+            constrained1.desiredState(State::Inactive, ++now);
+            CHECK(constrained1.state() == State::Inactive);
+            constrained1.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Active);
+            constrained1.desiredState(State::Inactive, ++now);
+            now += 1000;
+            constrained1.desiredState(State::Inactive, ++now);
+            constrained1.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Inactive);
+        }
     }
 
     WHEN("A default extra hold time of 1000ms is set on the Mutex and only act 2 has a custom hold time of 100ms")
@@ -294,7 +313,7 @@ SCENARIO("Mutex contraint", "[constraints]")
         CHECK(inactiveTimes.end == 8000);
     }
 
-    WHEN("TODO WIP: Try to create deadlock with errouneous actuator")
+    WHEN("Try to create deadlock with errouneous actuator")
     {
         WHEN("Target IO module cannot be reached")
         {
