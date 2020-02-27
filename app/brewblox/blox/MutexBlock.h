@@ -29,6 +29,7 @@ public:
     {
         blox_Mutex message = blox_Mutex_init_zero;
         message.differentActuatorWait = m_mutex.holdAfterTurnOff();
+        message.waitRemaining = m_mutex.timeRemaining();
 
         return streamProtoTo(out, &message, blox_Mutex_fields, blox_Mutex_size);
     }

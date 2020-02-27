@@ -34,9 +34,9 @@ public:
         return lookup.getId();
     }
 
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    virtual duration_millis_t allowedImpl(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
     {
-        return m_mutexConstraint.allowed(newState, now, act);
+        return m_mutexConstraint.allowedImpl(newState, now, act);
     };
 
     virtual uint8_t order() const override final
@@ -142,7 +142,7 @@ getDigitalConstraints(blox_DigitalConstraints& msg, const ActuatorDigitalConstra
             msg.constraints[i].constraint.mutexed.hasCustomHoldTime = obj->useCustomHoldDuration();
         } break;
         }
-        msg.constraints[i].limiting = act.limiting() & (uint8_t(1) << i);
+        msg.constraints[i].remaining = (*it)->timeRemaining();
         msg.constraints_count++;
     }
 }

@@ -36,11 +36,30 @@ public:
     Base() = default;
     virtual ~Base() = default;
 
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) = 0;
+    virtual duration_millis_t allowedImpl(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) = 0;
 
     virtual uint8_t id() const = 0;
 
     virtual uint8_t order() const = 0;
+
+    void timeRemaining(duration_millis_t v)
+    {
+        m_timeRemaining = v;
+    }
+
+    duration_millis_t timeRemaining() const
+    {
+        return m_timeRemaining;
+    }
+
+    duration_millis_t allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act)
+    {
+        m_timeRemaining = allowedImpl(newState, now, act);
+        return m_timeRemaining;
+    };
+
+private:
+    duration_millis_t m_timeRemaining = 0;
 };
 } // end namespace ADConstraints
 
@@ -50,12 +69,13 @@ public:
 
 private:
     std::vector<std::unique_ptr<Constraint>> constraints;
-    uint8_t m_limiting = 0x00;
     State m_desiredState = State::Inactive;
 
 public:
     ActuatorDigitalConstrained(ActuatorDigitalBase& act)
-        : ActuatorDigitalChangeLogged(act){};
+        : ActuatorDigitalChangeLogged(act)
+    {
+    }
 
     ActuatorDigitalConstrained(const ActuatorDigitalConstrained&) = delete;
     ActuatorDigitalConstrained& operator=(const ActuatorDigitalConstrained&) = delete;
@@ -93,38 +113,31 @@ public:
         ActuatorDigitalChangeLogged::resetHistory();
     }
 
-    uint8_t checkConstraints(const State& val, const ticks_millis_t& now)
+    duration_millis_t checkConstraints(const State& val, const ticks_millis_t& now)
     {
-        uint8_t limiting = 0x00;
-        uint8_t bit = 0x01;
         for (auto& c : constraints) {
-            if (!c->allowed(val, now, *this)) {
-                limiting = limiting | bit;
-                break;
+            auto remaining = c->allowed(val, now, *this);
+            if (remaining > 0) {
+                return remaining;
             }
-            bit = bit << 1;
         }
-        return limiting;
+        return 0;
     }
 
-    uint8_t limiting() const
-    {
-        return m_limiting;
-    }
-
-    void desiredState(const State& val, const ticks_millis_t& now)
+    duration_millis_t desiredState(const State& val, const ticks_millis_t& now)
     {
         lastUpdateTime = now; // always update fallback time for state setter without time
         m_desiredState = val;
-        m_limiting = checkConstraints(val, now);
-        if (m_limiting == 0) {
+        auto timeRemaining = checkConstraints(val, now);
+        if (timeRemaining == 0) {
             ActuatorDigitalChangeLogged::state(val, now);
         }
+        return timeRemaining;
     }
 
-    void desiredState(const State& val)
+    duration_millis_t desiredState(const State& val)
     {
-        desiredState(val, lastUpdateTime);
+        return desiredState(val, lastUpdateTime);
     }
 
     State state() const
@@ -132,17 +145,22 @@ public:
         return ActuatorDigitalChangeLogged::state();
     }
 
-    void update(const ticks_millis_t& now)
+    duration_millis_t update(const ticks_millis_t& now)
     {
-        desiredState(m_desiredState, now); // re-apply constraints for new update time
+        // re-apply constraints for new update time
+        auto remaining = desiredState(m_desiredState, now);
+        // update at least once per second
+        return (remaining < 1000) ? remaining : 1000;
     }
 
-    State desiredState() const
+    State
+    desiredState() const
     {
         return m_desiredState;
     }
 
-    const std::vector<std::unique_ptr<Constraint>>& constraintsList() const
+    const std::vector<std::unique_ptr<Constraint>>&
+    constraintsList() const
     {
         return constraints;
     };
@@ -153,7 +171,6 @@ public:
     MutexTarget() = default;
     ~MutexTarget() = default;
     std::mutex mut;
-    duration_millis_t m_holdAfterTurnOff = 0;
 
     duration_millis_t holdAfterTurnOff() const
     {
@@ -164,6 +181,20 @@ public:
     {
         m_holdAfterTurnOff = v;
     }
+
+    void timeRemaining(duration_millis_t v)
+    {
+        m_timeRemaining = v;
+    }
+
+    duration_millis_t timeRemaining() const
+    {
+        return m_timeRemaining;
+    }
+
+private:
+    duration_millis_t m_timeRemaining = 0;
+    duration_millis_t m_holdAfterTurnOff = 0;
 };
 
 namespace ADConstraints {
@@ -178,13 +209,22 @@ public:
     {
     }
 
-    bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    duration_millis_t allowedImpl(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
     {
         if (act.state() != State::Active) {
-            return true;
+            return 0;
+        }
+        if (newState == State::Active) {
+            return 0;
         }
         auto times = act.getLastStartEndTime(State::Active, now);
-        return newState == State::Active || times.end - times.start >= m_limit;
+        auto elapsedOn = times.end - times.start;
+
+        if (elapsedOn >= m_limit) {
+            return 0;
+        }
+
+        return m_limit - elapsedOn;
     }
 
     virtual uint8_t id() const override final
@@ -214,14 +254,24 @@ public:
     {
     }
 
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    virtual duration_millis_t allowedImpl(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
     {
         if (act.state() != State::Inactive) {
-            return true;
+            return 0;
         }
+
+        if (newState == State::Inactive) {
+            return 0;
+        }
+
         auto times = act.getLastStartEndTime(State::Inactive, now);
         auto elapsedOff = times.end - times.start;
-        return newState == State::Inactive || elapsedOff >= m_limit;
+
+        if (elapsedOff >= m_limit) {
+            return 0;
+        }
+
+        return m_limit - elapsedOff;
     }
 
     virtual uint8_t id() const override final
@@ -260,10 +310,11 @@ public:
     }
     ~Mutex() = default;
 
-    virtual bool allowed(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
+    virtual duration_millis_t allowedImpl(const State& newState, const ticks_millis_t& now, const ActuatorDigitalChangeLogged& act) override final
     {
         if (m_lock) {
             // already owner of lock.
+            auto elapsedMinimal = m_useCustomHoldDuration ? m_holdAfterTurnOff : m_lockedMutex->holdAfterTurnOff();
             if (newState == State::Inactive) {
                 // Release lock if actuator has been off for minimal time
                 duration_millis_t elapsedOff = 0;
@@ -271,17 +322,22 @@ public:
                     auto times = act.getLastStartEndTime(State::Inactive, now);
                     elapsedOff = times.end - times.start;
                 }
-                auto elapsedMinimal = m_useCustomHoldDuration ? m_holdAfterTurnOff : m_lockedMutex->holdAfterTurnOff();
+
                 if (elapsedOff >= elapsedMinimal) {
+                    m_lockedMutex->timeRemaining(0);
                     m_lock.unlock();
                     m_lockedMutex.reset();
+                } else {
+                    m_lockedMutex->timeRemaining(elapsedMinimal - elapsedOff);
                 }
+            } else {
+                m_lockedMutex->timeRemaining(elapsedMinimal);
             }
-            return true;
+            return 0;
         }
         if (newState == State::Inactive) {
-            // no locked, but no lock needed
-            return true;
+            // not locked, but no lock needed
+            return 0;
         }
         if (newState == State::Active) {
             m_lockedMutex = m_mutexTarget(); // store shared pointer to target so it can't be deleted while locked
@@ -289,11 +345,12 @@ public:
                 m_lock = std::unique_lock<std::mutex>(m_lockedMutex->mut, std::try_to_lock);
                 if (m_lock) {
                     // successfully aquired lock of target
-                    return true;
+                    return 0;
                 }
+                return m_lockedMutex->timeRemaining() + 1;
             }
         }
-        return false;
+        return 1000;
     }
 
     auto holdAfterTurnOff()

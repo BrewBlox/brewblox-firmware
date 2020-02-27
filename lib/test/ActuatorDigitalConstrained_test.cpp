@@ -177,6 +177,7 @@ SCENARIO("Mutex contraint", "[constraints]")
         {
             constrained2.desiredState(State::Active, ++now);
             CHECK(constrained2.state() == State::Inactive);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 2000) {
                 ++now;
@@ -198,15 +199,18 @@ SCENARIO("Mutex contraint", "[constraints]")
         {
             constrained2.desiredState(State::Active, ++now);
             CHECK(constrained2.state() == State::Inactive);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 500) {
                 ++now;
                 constrained1.update(now);
                 constrained2.update(now);
             }
+            CHECK(mut->timeRemaining() == 502);
 
             constrained1.desiredState(State::Active, ++now);
             constrained1.desiredState(State::Inactive, ++now);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 2000) {
                 ++now;
