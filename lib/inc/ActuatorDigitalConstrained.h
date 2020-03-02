@@ -353,7 +353,7 @@ public:
         return 1000;
     }
 
-    auto holdAfterTurnOff()
+    auto holdAfterTurnOff() const
     {
         return m_holdAfterTurnOff;
     }
@@ -363,7 +363,7 @@ public:
         m_holdAfterTurnOff = v;
     }
 
-    bool useCustomHoldDuration()
+    bool useCustomHoldDuration() const
     {
         return m_useCustomHoldDuration;
     }
@@ -371,6 +371,11 @@ public:
     void useCustomHoldDuration(bool v)
     {
         m_useCustomHoldDuration = v;
+    }
+
+    bool hasLock() const
+    {
+        return bool(m_lock);
     }
 
     virtual uint8_t

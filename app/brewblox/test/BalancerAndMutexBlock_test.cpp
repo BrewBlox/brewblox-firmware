@@ -105,7 +105,7 @@ SCENARIO("Two pin actuators are constrained by a mutex", "[balancer, mutex]")
             auto decoded = blox::DigitalActuator();
             testBox.processInputToProto(decoded);
             CHECK(testBox.lastReplyHasStatusOk());
-            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 1 state: Active constrainedBy { constraints { mutexed { mutexId: 101 } } } desiredState: Active");
+            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 1 state: Active constrainedBy { constraints { mutexed { mutexId: 101 hasLock: true } } } desiredState: Active");
         }
 
         // read pin actuator 2, which is constrained and inactive

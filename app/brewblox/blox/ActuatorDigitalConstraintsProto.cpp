@@ -63,6 +63,11 @@ public:
     {
         m_mutexConstraint.useCustomHoldDuration(v);
     }
+
+    bool hasLock()
+    {
+        return m_mutexConstraint.hasLock();
+    }
 };
 
 void
@@ -140,6 +145,7 @@ getDigitalConstraints(blox_DigitalConstraints& msg, const ActuatorDigitalConstra
             msg.constraints[i].constraint.mutexed.mutexId = obj->mutexId();
             msg.constraints[i].constraint.mutexed.extraHoldTime = obj->holdAfterTurnOff();
             msg.constraints[i].constraint.mutexed.hasCustomHoldTime = obj->useCustomHoldDuration();
+            msg.constraints[i].constraint.mutexed.hasLock = obj->hasLock();
         } break;
         }
         msg.constraints[i].remaining = (*it)->timeRemaining();
