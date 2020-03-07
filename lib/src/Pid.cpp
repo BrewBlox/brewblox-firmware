@@ -108,13 +108,16 @@ Pid::update()
                         }
                     }
 
-                    // make sure integral does not cross zero and does not increase by anti-windup
-                    integral_t newIntegral = m_integral - antiWindup;
-                    if (m_integral >= 0) {
-                        m_integral = std::clamp(newIntegral, integral_t(0), m_integral);
-                    } else {
-                        m_integral = std::clamp(newIntegral, m_integral, integral_t(0));
+                    // if integral has opposite sign to the proportional part, don't let anti-windup
+                    // increase the integral part past -10% of proportional part
+                    fp12_t limit = m_p * fp12_t{-0.1};
+                    if (m_p > 0 && m_i < limit) {
+                        return;
                     }
+                    if (m_p < 0 && m_i > limit) {
+                        return;
+                    }
+                    m_integral = m_integral - antiWindup;
                 }
             }
         }

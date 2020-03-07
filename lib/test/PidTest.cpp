@@ -216,8 +216,8 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         integratorValueWithoutAntiWindup = accumulatedError * (10.0 / 2000);
         CHECK(integratorValueWithoutAntiWindup == Approx(-50.0).epsilon(0.01));
         CHECK(pid.p() == Approx(-10).epsilon(0.01));
-        CHECK(pid.i() == Approx(0).margin(0.01)); // anti windup limits this to 0
-        CHECK(pid.integral() == Approx(0).margin(0.01));
+        CHECK(pid.i() == Approx(1).epsilon(0.01)); // anti windup limits this to -10% of p
+        CHECK(pid.integral() == Approx(200).epsilon(0.01));
         CHECK(pid.d() == Approx(0).margin(0.01));
 
         CHECK(actuator->setting() == Approx(0).margin(0.01));
@@ -261,8 +261,8 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         integratorValueWithoutAntiWindup = accumulatedError * (-10.0 / 2000);
         CHECK(integratorValueWithoutAntiWindup == Approx(-50.0).epsilon(0.01));
         CHECK(pid.p() == Approx(-10).epsilon(0.01));
-        CHECK(pid.i() == Approx(0).margin(0.01)); // anti windup limits this to 0
-        CHECK(pid.integral() == Approx(0).margin(0.01));
+        CHECK(pid.i() == Approx(1).epsilon(0.01)); // anti windup limits this to 0
+        CHECK(pid.integral() == Approx(-200).epsilon(0.01));
         CHECK(pid.d() == Approx(0).margin(0.01));
 
         CHECK(actuator->setting() == Approx(0).margin(0.01));
@@ -306,10 +306,10 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         integratorValueWithoutAntiWindup = accumulatedError * (10.0 / 2000);
         CHECK(integratorValueWithoutAntiWindup == Approx(-50.0).epsilon(0.01));
         CHECK(pid.p() == Approx(-10).epsilon(0.01));
-        CHECK(pid.i() == Approx(0).margin(0.01)); // anti windup limits this to 0
+        CHECK(pid.i() == Approx(1).margin(0.01)); // anti windup limits this to -10% of p
         CHECK(pid.d() == Approx(0).margin(0.01));
 
-        CHECK(actuator->setting() == Approx(-10).margin(0.01));
+        CHECK(actuator->setting() == Approx(-9).margin(0.01));
     }
 
     WHEN("The actuator value is not reaching setting, the integrator is limited by anti-windup (negative kp)")
@@ -350,10 +350,10 @@ SCENARIO("PID Test with mock actuator", "[pid]")
         integratorValueWithoutAntiWindup = accumulatedError * (-10.0 / 2000);
         CHECK(integratorValueWithoutAntiWindup == Approx(-50.0).epsilon(0.01));
         CHECK(pid.p() == Approx(-10).epsilon(0.01));
-        CHECK(pid.i() == Approx(0).margin(0.01)); // anti windup limits this to 0
+        CHECK(pid.i() == Approx(1).margin(0.01)); // anti windup limits this to -10% of p
         CHECK(pid.d() == Approx(0).margin(0.01));
 
-        CHECK(actuator->setting() == Approx(-10).margin(0.01));
+        CHECK(actuator->setting() == Approx(-9).margin(0.01));
     }
 
     WHEN("The sensor of the PID input becomes invalid")
@@ -778,7 +778,7 @@ SCENARIO("PID Test with PWM actuator", "[pid]")
 
         CHECK(pid.p() + pid.i() + pid.d() == actuator->setting());
 
-        THEN("The integral will be reduced back to zero by the anti-windup after adding the constraint")
+        THEN("The integral will be reduced towards/past zero by the anti-windup after adding the constraint")
         {
             actuator->addConstraint(std::make_unique<AAConstraints::Maximum<1>>(40));
 
@@ -800,7 +800,8 @@ SCENARIO("PID Test with PWM actuator", "[pid]")
             pid.update();
 
             CHECK(pid.p() == Approx(50).epsilon(0.01));
-            CHECK(pid.i() == Approx(0.0).margin(0.05));
+            CHECK(pid.i() < 0);
+            CHECK(pid.i() > -10);
             CHECK(pid.d() == Approx(0.0).margin(0.01));
 
             CHECK(pid.p() + pid.i() + pid.d() != actuator->setting());
@@ -828,7 +829,8 @@ SCENARIO("PID Test with PWM actuator", "[pid]")
             pid.update();
 
             CHECK(pid.p() == Approx(125).epsilon(0.01));
-            CHECK(pid.i() == Approx(0.0).margin(0.1));
+            CHECK(pid.i() < 0);
+            CHECK(pid.i() > -12.5);
             CHECK(pid.d() == Approx(0.0).margin(0.01));
 
             CHECK(pid.p() + pid.i() + pid.d() != actuator->setting());
