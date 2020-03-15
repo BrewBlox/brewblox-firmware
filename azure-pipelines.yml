@@ -30,14 +30,18 @@ jobs:
       - checkout: self
         fetchDepth: 1
         submodules: recursive
-      - bash: pwd
-      - bash: compile-proto.sh
+      - script: pwd
+      - script: ls
+      - bash: |
+          bash build/compile-proto.sh
         displayName: Compile proto
 
-      - bash: build-tests.sh
+      - bash: |
+          bash build/build-tests.sh
         displayName: Build tests
 
-      - bash: run-tests.sh
+      - bash: |
+          bash run-tests.sh
         displayName: Run tests
 
   #########################################################
