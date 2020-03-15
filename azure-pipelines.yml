@@ -4,7 +4,8 @@ resources:
   containers: 
     - container: compiler
       image: brewblox/firmware-compiler:arm-gcc-8
-      volumes: s:/firmware
+      volumes: 
+        - s:/firmware
 
 trigger:
   tags:
