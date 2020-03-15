@@ -21,30 +21,23 @@ jobs:
   - job: Tests
     pool:
       vmImage: "Ubuntu-18.04"
+    
+    container: brewblox/firmware-compiler:arm-gcc-8
 
     steps:
-      - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
+      - checkout: self
+        fetchDepth: 1
+        submodules: recursive
+        displayName: Checkout
+        path: /firmware
 
-      - bash: |
-          bash start-compiler.sh
-        workingDirectory: docker
-        displayName: Start compiler
-
-      - bash: |
-          docker-compose exec -T compiler bash compile-proto.sh
-        workingDirectory: docker
+      - bash: compile-proto.sh
         displayName: Compile proto
 
-      - bash: |
-          docker-compose exec -T compiler bash build-tests.sh
-        workingDirectory: docker
+      - bash: build-tests.sh
         displayName: Build tests
 
-      - bash: |
-          docker-compose exec -T compiler bash run-tests.sh
-        workingDirectory: docker
+      - bash: run-tests.sh
         displayName: Run tests
 
   #########################################################
