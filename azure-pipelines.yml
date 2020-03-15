@@ -9,9 +9,9 @@ trigger:
   branches:
     include:
       - '*'
-  pr:
-    branches:
-      include:
+pr:
+  branches:
+    include:
       - '*'
 
 #########################################################
