@@ -1,6 +1,10 @@
 resources:
   repositories:
     - repository: self
+  containers: 
+    - container: compiler
+      image: brewblox/firmware-compiler:arm-gcc-8
+      volumes: s:/firmware
 
 trigger:
   tags:
@@ -21,16 +25,12 @@ jobs:
   - job: Tests
     pool:
       vmImage: "Ubuntu-18.04"
-    
-    container: brewblox/firmware-compiler:arm-gcc-8
+    container: compiler
 
     steps:
       - checkout: self
         fetchDepth: 1
-        submodules: recursive
-        displayName: Checkout
-        path: /firmware
-
+        submodules: recursive      
       - bash: compile-proto.sh
         displayName: Compile proto
 
