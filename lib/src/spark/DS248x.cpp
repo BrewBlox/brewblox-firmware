@@ -49,7 +49,7 @@ DS248x::setReadPtr(uint8_t readPtr)
 uint8_t
 DS248x::readByte()
 {
-    Wire.requestFrom(mAddress, (uint8_t)1);
+    Wire.requestFrom(mAddress, size_t{1});
     return Wire.read();
 }
 

@@ -10,8 +10,13 @@ ifeq ($(PLATFORM_ID),3)
 CPPEXCLUDES += lib/src/spark/TimerInterrupts.cpp
 endif
 
-# set cnl as system includes to suppress warnings
+ifeq ($(PLATFORM_ID),3)
+# cnl as system includes to suppress warnings
 CPPFLAGS += -isystem $(SOURCE_PATH)/lib/cnl/include
+else
+# arm compiler automatically includes system headers as external c, use normal include
+CPPFLAGS += -I $(SOURCE_PATH)/lib/cnl/include
+endif
 
 # add all controlbox source files
 INCLUDE_DIRS += $(SOURCE_PATH)/controlbox/src/
@@ -93,7 +98,16 @@ CPPSRC += $(call here_files,platform/spark/modules/mdns/src,*.cpp)
 ifeq ($(BOOST_ROOT),)
 $(error BOOST_ROOT not set. Download boost and add BOOST_ROOT to your environment variables.)
 endif
+
+
+ifeq ($(PLATFORM_ID),3)
+# boost as system includes to suppress warnings
 CPPFLAGS += -isystem $(BOOST_ROOT)
+else
+# arm compiler automatically includes system headers as external c, use normal include
+CPPFLAGS += -I $(BOOST_ROOT)
+endif
+
 
 # the following warnings can help find opportunities for impromevent in virtual functions
 # they are disabled in the default build, because the dependencies (particle firmware, flashee) have many violations 
