@@ -4,9 +4,7 @@ resources:
   containers: 
     - container: compiler
       image: brewblox/firmware-compiler:arm-gcc-8
-      volumes: 
-        - s:/firmware
-
+      
 trigger:
   tags:
     include:
@@ -31,7 +29,8 @@ jobs:
     steps:
       - checkout: self
         fetchDepth: 1
-        submodules: recursive      
+        submodules: recursive
+      - bash: pwd
       - bash: compile-proto.sh
         displayName: Compile proto
 
