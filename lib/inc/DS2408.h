@@ -167,8 +167,9 @@ public:
         return false;
     }
 
-    virtual bool writeChannelImpl(uint8_t channel, const ChannelConfig& config) override final
+    virtual bool writeChannelImpl(uint8_t channel, const ChannelConfig&) override final
     {
+        // second argument is not used, already set by caller and used in updateLatches
         if (connected() && validChannel(channel)) {
             updateLatches();
             return true;

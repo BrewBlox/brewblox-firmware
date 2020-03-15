@@ -39,7 +39,7 @@ public:
     virtual ~BalancerBlock() = default;
 
     virtual cbox::CboxError
-    streamFrom(cbox::DataIn& dataIn) override final
+    streamFrom(cbox::DataIn&) override final
     {
         return cbox::CboxError::OK; // no settings to write (actuators register themselves)
     }
@@ -55,7 +55,7 @@ public:
     }
 
     virtual cbox::CboxError
-    streamPersistedTo(cbox::DataOut& out) const override final
+    streamPersistedTo(cbox::DataOut&) const override final
     {
         return cbox::CboxError::OK; // no settings to persist
     }

@@ -28,7 +28,7 @@ namespace google {
 namespace protobuf {
     class Message;
 }
-};
+}
 
 class ProtoDataOut {
 public:

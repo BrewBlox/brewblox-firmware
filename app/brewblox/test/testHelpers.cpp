@@ -45,4 +45,4 @@ decodeProtoFromReply(std::stringstream& ss, ::google::protobuf::Message& message
     cbox::OStreamDataOut protoData(ssProto);
     decoder.push(protoData);
     message.ParseFromIstream(&ssProto);
-};
+}

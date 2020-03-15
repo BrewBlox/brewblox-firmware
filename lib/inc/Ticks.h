@@ -64,12 +64,12 @@ public:
 
     inline utc_seconds_t secondsSince(utc_seconds_t timeStamp) const
     {
-        return ::secondsSince(utc(), timeStamp);
+        return utc() - timeStamp;
     }
 
     inline ticks_millis_t millisSince(ticks_millis_t timeStamp) const
     {
-        return ::millisSince(millis(), timeStamp);
+        return millis() - timeStamp;
     }
 
     struct tm calendarTime() const

@@ -38,6 +38,9 @@ CPPSRC += $(call here_files,lib/test,*.cpp)
 INCLUDE_DIRS += $(SOURCE_PATH)/lib/inc
 CPPSRC += $(call here_files,lib/src,*.cpp)
 
+# set cnl as system includes to suppress warnings
+CPPFLAGS += -isystem $(SOURCE_PATH)/lib/cnl/include
+
 #  catch 2
 INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/third_party/catch2/catch2/single_include/catch2
 
@@ -49,10 +52,24 @@ CPPFLAGS += -isystem $(BOOST_ROOT)
 
 CFLAGS += $(patsubst %,-I%,$(INCLUDE_DIRS)) -I.
 CFLAGS += -ffunction-sections -Wall
-
+CFLAGS += -ffunction-sections -Wall
+CFLAGS += -Wno-deprecated
+CFLAGS += -Wnull-dereference 
+CPPFLAGS += -fdiagnostics-show-template-tree -fno-elide-type # GCC8 required
+CFLAGS += -Wextra
+CPPFLAGS += -Wextra-semi
+CFLAGS += -Wpedantic -Wvla -Wswitch-enum -fvar-tracking-assignments 
+CFLAGS += -Wduplicated-cond -Wduplicated-branches -rdynamic
 
 # Flag compiler error for [-Wdeprecated-declarations]
 CFLAGS += -Werror=deprecated-declarations
+
+# the following warnings can help find opportunities for impromevent in virtual functions
+# Warn when virtual functions are overriden without override/override final specifier (requires gcc 5.1)
+CPPFLAGS += -Wsuggest-override
+# Warn when functions and classes can be marked final
+CPPFLAGS += -Wsuggest-final-types
+CPPFLAGS += -Wsuggest-final-methods
 
 # Generate dependency files automatically.
 CFLAGS += -MD -MP -MF $@.d
@@ -88,8 +105,8 @@ runner: $(TARGETDIR)$(TARGET)
 
 $(TARGETDIR)$(TARGET) : $(BUILD_PATH) $(ALLOBJ)
 	@echo Building target: $@
-	$(MKDIR) $(dir $@)
-	$(LD) $(CFLAGS) $(ALLOBJ) --output $@ $(LDFLAGS)
+	@$(MKDIR) $(dir $@)
+	@$(LD) $(CFLAGS) $(ALLOBJ) --output $@ $(LDFLAGS)
 	@echo
 
 $(BUILD_PATH): 
@@ -100,15 +117,15 @@ $(BUILD_PATH):
 # C compiler to build .o from .c in $(BUILD_DIR)
 $(BUILD_PATH)%.o : $(SOURCE_PATH)/%.c
 	@echo Building file: $<
-	$(MKDIR) $(dir $@)
-	$(CCC) $(CCFLAGS) -c -o $@ $<
+	@$(MKDIR) $(dir $@)
+	@$(CCC) $(CCFLAGS) -c -o $@ $<
 
 # CPP compiler to build .o from .cpp in $(BUILD_DIR)
 # Note: Calls standard $(CC) - gcc will invoke g++ as appropriate
 $(BUILD_PATH)%.o : $(SOURCE_PATH)/%.cpp
 	@echo Building file: $<
-	$(MKDIR) $(dir $@)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	@$(MKDIR) $(dir $@)
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # Other Targets
 clean:	

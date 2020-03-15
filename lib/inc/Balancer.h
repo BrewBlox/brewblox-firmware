@@ -132,7 +132,7 @@ public:
     const std::vector<Request>& clients() const
     {
         return requesters;
-    };
+    }
 };
 
 namespace AAConstraints {

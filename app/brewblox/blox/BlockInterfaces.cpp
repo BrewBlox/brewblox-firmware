@@ -71,7 +71,7 @@ interfaceIdImpl<ActuatorDigitalConstrained>()
 
 template <>
 const obj_type_t
-interfaceIdImpl<TimedMutex>()
+interfaceIdImpl<MutexTarget>()
 {
     return BrewBloxTypes_BlockType_MutexInterface;
 }

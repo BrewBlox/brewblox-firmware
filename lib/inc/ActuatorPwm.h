@@ -71,7 +71,7 @@ public:
     {
         // ensure that interrupts are removed before destruction.
         enabled(false);
-    };
+    }
 
     /** ActuatorPWM keeps track of the last high and low transition.
      *  This function returns the actually achieved value. This can differ from

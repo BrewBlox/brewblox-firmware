@@ -37,7 +37,7 @@ DisplaySettingsBlock::streamFrom(cbox::DataIn& in)
         m_newSettingsReceived = true;
     }
     return result;
-};
+}
 
 cbox::CboxError
 DisplaySettingsBlock::streamPersistedTo(cbox::DataOut& out) const

@@ -591,9 +591,9 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
             for (; now < 100000; now += 100) {
                 if (now >= nextUpdate) {
                     nextUpdate = pwm.update(now);
-                }
-                if (now > 50000) {
-                    CHECK(pwm.value() == Approx(10).margin(2));
+                    if (now > 60000) {
+                        CHECK(pwm.value() == Approx(10).margin(2));
+                    }
                 }
             }
         }
@@ -641,17 +641,21 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
         4000);
     auto constrainedPwm2 = ActuatorAnalogConstrained(pwm2);
 
-    auto mut = std::make_shared<TimedMutex>();
+    auto mut = std::make_shared<MutexTarget>();
     auto balancer = std::make_shared<Balancer<2>>();
 
     constrainedMock1->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [mut]() {
             return mut;
-        }));
+        },
+        0,
+        true));
     constrainedMock2->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [mut]() {
             return mut;
-        }));
+        },
+        0,
+        true));
 
     auto checkDuties = [&](value_t duty1, value_t duty2, double expected1, double expected2) {
         auto timeHigh1 = duration_millis_t(0);
@@ -738,35 +742,6 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
         }
     }
 
-    WHEN("One PWM actuator is holding the mutex and the other is under 5% duty, the blocked actuator will keep its desiredState Inactive")
-    {
-        constrainedPwm1.setting(10);
-        constrainedPwm2.setting(4);
-
-        constrainedPwm1.update();
-        constrainedPwm2.update();
-        pwm1.update(now);
-        pwm2.update(now);
-
-        mut->differentActuatorWait(5 * period);
-
-        auto start = now;
-        auto nextPwm1Update = now;
-        auto nextPwm2Update = now;
-        for (; now - start <= 100 * period; now += 100) {
-            if (now >= nextPwm1Update) {
-                constrainedPwm1.update();
-                nextPwm1Update = pwm1.update(now);
-            }
-            if (now >= nextPwm2Update) {
-                nextPwm2Update = pwm2.update(now);
-                constrainedPwm2.update();
-                CHECK(constrainedMock2->desiredState() == State::Inactive);
-            }
-            mut->update(now);
-        }
-    }
-
     WHEN("A PWM actuator output goes active after being held back by the Mutex for a long time")
     {
         constrainedPwm1.setting(100);
@@ -777,7 +752,20 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
         pwm1.update(now);
         pwm2.update(now);
 
-        mut->differentActuatorWait(5 * period);
+        constrainedMock1->removeAllConstraints();
+        constrainedMock1->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [mut]() {
+                return mut;
+            },
+            5 * period,
+            true));
+        constrainedMock2->removeAllConstraints();
+        constrainedMock2->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [mut]() {
+                return mut;
+            },
+            5 * period,
+            true));
 
         auto start = now;
         auto turnOffPwm1 = now + 50 * period;
@@ -788,7 +776,6 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
             constrainedPwm2.update();
             pwm1.update(now);
             pwm2.update(now);
-            mut->update(now);
         }
         constrainedPwm1.setting(0);
         constrainedPwm2.setting(5);
@@ -798,9 +785,68 @@ SCENARIO("Two PWM actuators driving mutually exclusive digital actuators")
             constrainedPwm2.update();
             pwm1.update(now);
             pwm2.update(now);
-            mut->update(now);
             REQUIRE(pwm2.value() <= 5);
         }
+    }
+
+    WHEN("A PWM actuator that with a blocked target is set to 100%, followed by 0%, the desired state of the target goes from high to low")
+    {
+        constrainedMock1->removeAllConstraints();
+        constrainedMock1->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [mut]() {
+                return mut;
+            },
+            5 * period,
+            true));
+        constrainedMock2->removeAllConstraints();
+        constrainedMock2->addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [mut]() {
+                return mut;
+            },
+            5 * period,
+            true));
+
+        constrainedPwm1.setting(100);
+        constrainedPwm2.setting(100);
+        constrainedPwm1.update();
+        constrainedPwm2.update();
+        pwm1.update(now++);
+        pwm2.update(now++);
+
+        // actuator 1 now holds the mutex
+        CHECK(constrainedMock1->desiredState() == State::Active);
+        CHECK(constrainedMock2->desiredState() == State::Active);
+        CHECK(constrainedMock1->state() == State::Active);
+        CHECK(constrainedMock2->state() == State::Inactive);
+
+        constrainedPwm1.setting(0);
+        constrainedPwm2.setting(100);
+
+        constrainedPwm1.update();
+        constrainedPwm2.update();
+        pwm1.update(now++);
+        pwm2.update(now++);
+
+        // actuator 1 still holds the mutex, due to the wait time
+
+        CHECK(constrainedMock1->desiredState() == State::Inactive);
+        CHECK(constrainedMock2->desiredState() == State::Active);
+        CHECK(constrainedMock1->state() == State::Inactive);
+        CHECK(constrainedMock2->state() == State::Inactive);
+
+        constrainedPwm1.setting(0);
+        constrainedPwm2.setting(0);
+
+        constrainedPwm1.update();
+        constrainedPwm2.update();
+        pwm1.update(now++);
+        pwm2.update(now++);
+
+        // actuator 1 still holds the mutex, but actuator 2 should have an updated desired state
+        CHECK(constrainedMock1->desiredState() == State::Inactive);
+        CHECK(constrainedMock2->desiredState() == State::Inactive);
+        CHECK(constrainedMock1->state() == State::Inactive);
+        CHECK(constrainedMock2->state() == State::Inactive);
     }
 }
 #if 0

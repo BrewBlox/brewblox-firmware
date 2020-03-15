@@ -110,7 +110,9 @@ private:
 
 public:
     DataOutEncoded(DataOut& _out)
-        : out(_out){};
+        : out(_out)
+    {
+    }
     virtual ~DataOutEncoded() = default;
 
     virtual void writeResponseSeparator() = 0;
@@ -169,7 +171,7 @@ class BlackholeDataOut final : public DataOut {
 public:
     BlackholeDataOut() = default;
     virtual ~BlackholeDataOut() = default;
-    virtual bool write(uint8_t data) override final { return true; }
+    virtual bool write(uint8_t) override final { return true; }
 };
 
 /**
@@ -181,9 +183,11 @@ private:
 
 public:
     CountingBlackholeDataOut()
-        : counted(0){};
+        : counted(0)
+    {
+    }
     virtual ~CountingBlackholeDataOut() = default;
-    virtual bool write(uint8_t data) override final
+    virtual bool write(uint8_t) override final
     {
         ++counted;
         return true;
@@ -360,7 +364,9 @@ class TeeDataOut final : public DataOut {
 public:
     TeeDataOut(DataOut& _out1, DataOut& _out2)
         : out1(_out1)
-        , out2(_out2){};
+        , out2(_out2)
+    {
+    }
     virtual ~TeeDataOut() = default;
 
     virtual bool write(uint8_t data) override
@@ -395,8 +401,8 @@ public:
     virtual bool hasNext() override { return pos < size; }
     virtual uint8_t peek() override { return data[pos]; }
     virtual stream_size_t available() override { return size - pos; }
-    void reset() { pos = 0; };
-    stream_size_t bytes_read() { return pos; };
+    void reset() { pos = 0; }
+    stream_size_t bytes_read() { return pos; }
 
     virtual StreamType streamType() const override final
     {

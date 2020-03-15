@@ -238,7 +238,7 @@ IirFilter::downsamplePeriod() const
     return params().downsample;
 }
 
-double const
+double
 IirFilter::dcGain(uint8_t idx)
 {
     long double num = 0;

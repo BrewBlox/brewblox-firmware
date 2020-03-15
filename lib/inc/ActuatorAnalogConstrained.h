@@ -126,7 +126,9 @@ private:
 
 public:
     ActuatorAnalogConstrained(ActuatorAnalog& act)
-        : actuator(act){};
+        : actuator(act)
+    {
+    }
 
     ActuatorAnalogConstrained(const ActuatorAnalogConstrained&) = delete;
     ActuatorAnalogConstrained& operator=(const ActuatorAnalogConstrained&) = delete;
@@ -234,5 +236,5 @@ public:
     const std::vector<std::unique_ptr<Constraint>>& constraintsList() const
     {
         return constraints;
-    };
+    }
 };

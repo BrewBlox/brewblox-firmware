@@ -25,7 +25,6 @@
         }
       ],
       "miDebuggerArgs": "-x ~/repos/firmware/tools/pretty.gdbinit",
-      "preLaunchTask": "build_and_touch_gcc"
     },
     {
       "name": "gdb lib test",

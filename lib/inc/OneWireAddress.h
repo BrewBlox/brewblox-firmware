@@ -25,9 +25,13 @@
 class OneWireAddress {
 public:
     OneWireAddress()
-        : address(0){};
+        : address(0)
+    {
+    }
     OneWireAddress(uint64_t addr)
-        : address(addr){};
+        : address(addr)
+    {
+    }
     ~OneWireAddress() = default;
 
     const uint8_t* asUint8ptr() const

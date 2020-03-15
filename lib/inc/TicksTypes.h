@@ -27,11 +27,3 @@ using duration_seconds_t = uint32_t;
 using ticks_millis_t = uint32_t;
 using ticks_micros_t = uint32_t;
 using utc_seconds_t = uint32_t;
-
-// return time that has passed since timeStamp, take overflow into account
-duration_seconds_t
-secondsSince(utc_seconds_t currentTime, utc_seconds_t previousTime);
-
-// return time that has passed since timeStamp, take overflow into account
-duration_millis_t
-millisSince(ticks_millis_t currentTime, ticks_millis_t previousTime);

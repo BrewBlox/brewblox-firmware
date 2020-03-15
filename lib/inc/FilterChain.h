@@ -53,15 +53,15 @@ public:
     uint32_t getCount() const
     {
         return counter;
-    }; // return count. Can be used to synchronize sensor switching
+    } // return count. Can be used to synchronize sensor switching
     uint32_t getCount(uint8_t filterNr) const
     {
         return counter / sampleInterval(filterNr - 1);
-    }; // return count for a specific filter
+    } // return count for a specific filter
     uint8_t length() const
     {
         return stages.size();
-    };
+    }
     uint8_t fractionBits(uint8_t idx) const;
     uint8_t fractionBits() const;
     int64_t readWithNFractionBits(uint8_t filterNr, uint8_t bits) const;

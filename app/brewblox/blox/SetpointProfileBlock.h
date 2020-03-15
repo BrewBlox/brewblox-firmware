@@ -36,7 +36,7 @@ protected:
         return true;
     }
 
-    static bool streamPointsIn(pb_istream_t* stream, const pb_field_t* field, void** arg)
+    static bool streamPointsIn(pb_istream_t* stream, const pb_field_t*, void** arg)
     {
         std::vector<Point>* newPoints = reinterpret_cast<std::vector<Point>*>(*arg);
 

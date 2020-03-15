@@ -10,6 +10,9 @@ ifeq ($(PLATFORM_ID),3)
 CPPEXCLUDES += lib/src/spark/TimerInterrupts.cpp
 endif
 
+# set cnl as system includes to suppress warnings
+CPPFLAGS += -isystem $(SOURCE_PATH)/lib/cnl/include
+
 # add all controlbox source files
 INCLUDE_DIRS += $(SOURCE_PATH)/controlbox/src/
 CPPSRC += $(call here_files,controlbox/src/cbox/,*.cpp)
@@ -90,8 +93,7 @@ CPPSRC += $(call here_files,platform/spark/modules/mdns/src,*.cpp)
 ifeq ($(BOOST_ROOT),)
 $(error BOOST_ROOT not set. Download boost and add BOOST_ROOT to your environment variables.)
 endif
-# cannot use -isystem. The arm compiler doesn't like it
-CPPFLAGS += -I$(BOOST_ROOT)
+CPPFLAGS += -isystem $(BOOST_ROOT)
 
 # the following warnings can help find opportunities for impromevent in virtual functions
 # they are disabled in the default build, because the dependencies (particle firmware, flashee) have many violations 

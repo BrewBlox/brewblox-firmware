@@ -55,17 +55,17 @@ public:
     }
     utc_seconds_t timeSinceSeconds(utc_seconds_t timeStamp) const
     {
-        return ::secondsSince(utc(), timeStamp);
+        return utc() - timeStamp;
     }
     ticks_millis_t timeSinceMillis(ticks_millis_t timeStamp) const
     {
-        return ::millisSince(millis(), timeStamp);
+        return millis() - timeStamp;
     }
-    void reset(ticks_millis_t v = 0) { _ticks = v; };
+    void reset(ticks_millis_t v = 0) { _ticks = v; }
     void delayMillis(const duration_millis_t& duration) const
     {
         _ticks += duration;
-    };
+    }
 
 private:
     ticks_millis_t _increment;

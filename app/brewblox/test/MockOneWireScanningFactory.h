@@ -36,7 +36,7 @@ public:
     virtual void reset() override final
     {
         nextAddress = adressesOnBus.cbegin();
-    };
+    }
 
     virtual OneWireAddress next() override final
     {

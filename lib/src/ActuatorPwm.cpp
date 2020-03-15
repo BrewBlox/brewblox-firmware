@@ -140,10 +140,10 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         auto twoPeriodHighTime = previousHighTime + currentHighTime;
 
         auto wait = duration_millis_t(0);
-        auto currentState = actPtr->state();
+        auto currentDesiredState = actPtr->desiredState();
         auto invDutyTime = m_period - m_dutyTime;
 
-        if (currentState == State::Active) {
+        if (currentDesiredState == State::Active) {
             if (m_dutySetting == value_t(100)) {
                 m_dutyAchieved = 100;
                 return now + 1000;
@@ -185,8 +185,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
                     }
                 }
             }
-            m_valueValid = true;
-        } else if (currentState == State::Inactive) {
+        } else if (currentDesiredState == State::Inactive) {
             if (m_dutySetting == value_t(0)) {
                 m_dutyAchieved = 0;
                 return now + 1000;
@@ -229,29 +228,20 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
                     }
                 }
             }
-            m_valueValid = true;
-        } else {
-            m_valueValid = false;
         }
 
         bool toggled = false;
+        auto currentState = actPtr->state();
 
         // Toggle actuator if necessary
-        if (m_enabled && m_settingValid && wait == 0) {
-            if (currentState == State::Inactive) {
+        if (m_enabled && m_settingValid && (wait == 0 || currentState != currentDesiredState)) {
+            if (currentDesiredState == State::Inactive) {
                 actPtr->desiredState(State::Active, now);
             } else {
                 actPtr->desiredState(State::Inactive, now);
             }
             if (currentState != actPtr->state()) {
                 toggled = true;
-            } else if (currentState == State::Inactive && m_dutySetting < 5) {
-                // for duty cycle under 5%, set output to inactive explicitly to cancel any pending active state
-                // when the toggle was blocked. This prevents a low duty cycle to create a lingering pending active state in the mutex
-                // The PWM will continue to try to activate the pin
-                actPtr->desiredState(State::Inactive, now);
-                // increase wait time to not keep retrying each millisecond
-                wait = std::min(duration_millis_t(1000), m_period >> 5);
             }
         }
 
@@ -260,12 +250,17 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             m_dutyAchieved = 0;
         } else {
             // calculate achieved duty cycle
-            auto dutyAchieved = (value_t(100) * twoPeriodHighTime) / twoPeriodElapsed;
-            if (toggled // end of high or low time or
-                        // current period is long enough to start using the current achieved value including this period
-                || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)
-                || (currentState == State::Active && dutyAchieved > m_dutyAchieved)) {
-                m_dutyAchieved = dutyAchieved;
+            if (currentState == State::Unknown) {
+                m_valueValid = false;
+            } else {
+                auto dutyAchieved = (value_t(100) * twoPeriodHighTime) / twoPeriodElapsed;
+                if (toggled // end of high or low time or
+                            // current period is long enough to start using the current achieved value including this period
+                    || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)
+                    || (currentState == State::Active && dutyAchieved > m_dutyAchieved)) {
+                    m_dutyAchieved = dutyAchieved;
+                    m_valueValid = true;
+                }
             }
         }
 

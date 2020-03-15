@@ -52,19 +52,19 @@ public:
         : actuator(act)
     {
         resetHistory();
-    };
+    }
     ~ActuatorDigitalChangeLogged() = default;
 
     void state(const State& val, const ticks_millis_t& now)
     {
         actuator.state(val);
         update(now);
-    };
+    }
 
     void state(const State& val)
     {
         state(val, lastUpdateTime);
-    };
+    }
 
     void setStateUnlogged(const State& val)
     {
@@ -74,7 +74,7 @@ public:
     State state() const
     {
         return actuator.state();
-    };
+    }
 
     void update(const ticks_millis_t& now)
     {

@@ -66,8 +66,9 @@ public:
 };
 BlinkFirmwareUpdateMock BlinkFirmwareUpdate;
 
-void
-updateFirmwareFromStream(cbox::StreamType streamType){};
+void updateFirmwareFromStream(cbox::StreamType)
+{
+}
 #endif
 
 // Include OneWire implementation depending on platform
@@ -312,8 +313,8 @@ applicationCommand(uint8_t cmdId, cbox::DataIn& in, cbox::EncodedDataOut& out)
             theConnectionPool().closeAll();
             updateFirmwareFromStream(in.streamType());
             uint8_t reason = uint8_t(RESET_USER_REASON::FIRMWARE_UPDATE_FAILED);
-            handleReset(true, reason); // reset in case the firmware update failed
             BlinkFirmwareUpdate.setActive(false);
+            handleReset(true, reason); // reset in case the firmware update failed
         }
         return true;
     }

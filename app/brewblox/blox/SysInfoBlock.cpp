@@ -44,13 +44,13 @@ SysInfoBlock::streamTo(cbox::DataOut& out) const
 }
 
 cbox::CboxError
-SysInfoBlock::streamFrom(cbox::DataIn& in)
+SysInfoBlock::streamFrom(cbox::DataIn&)
 {
     return cbox::CboxError::OK;
-};
+}
 
 cbox::CboxError
-SysInfoBlock::streamPersistedTo(cbox::DataOut& out) const
+SysInfoBlock::streamPersistedTo(cbox::DataOut&) const
 {
     return cbox::CboxError::OK;
 }

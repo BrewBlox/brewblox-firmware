@@ -23,9 +23,10 @@
 
 class MockIoArray : public IoArray {
 public:
-    uint8_t pinStates = 0; // 1 = high, 0 is low
-    uint8_t pinModes = 0;  // 1 = ouput, 0 is input
-    uint8_t errorState = 0;
+    uint8_t pinStates = 0;  // 1 = high, 0 is low
+    uint8_t pinModes = 0;   // 1 = ouput, 0 is input
+    uint8_t errorState = 0; // error for specific channel
+    bool isConnected = true;
 
     MockIoArray()
         : IoArray(8)
@@ -37,7 +38,7 @@ public:
     virtual bool senseChannelImpl(uint8_t channel, State& result) const override final
     {
         // TODO
-        if (validChannel(channel) && ((getMask(channel) & errorState) == 0)) {
+        if (isConnected && validChannel(channel) && ((getMask(channel) & errorState) == 0)) {
             result = (pinStates & getMask(channel)) != 0 ? State::Active : State::Inactive;
             return true;
         }
@@ -47,7 +48,7 @@ public:
 
     virtual bool writeChannelImpl(uint8_t channel, const ChannelConfig& config) override final
     {
-        if (validChannel(channel)) {
+        if (isConnected && validChannel(channel)) {
             uint8_t mask = getMask(channel);
             switch (config) {
             case ChannelConfig::ACTIVE_HIGH:
@@ -67,6 +68,11 @@ public:
             }
         }
         return false;
+    }
+
+    void connected(bool v)
+    {
+        isConnected = v;
     }
 
     void setChannelError(uint8_t chan, bool isError)

@@ -60,7 +60,7 @@ public:
         return streamProtoTo(out, &message, blox_Ticks_fields, blox_Ticks_size);
     }
 
-    virtual cbox::CboxError streamPersistedTo(cbox::DataOut& out) const override final
+    virtual cbox::CboxError streamPersistedTo(cbox::DataOut&) const override final
     {
         return cbox::CboxError::OK;
     }

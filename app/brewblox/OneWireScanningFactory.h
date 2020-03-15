@@ -52,7 +52,7 @@ public:
     virtual void reset() override
     {
         bus.reset_search();
-    };
+    }
 
     virtual OneWireAddress next()
     {
@@ -85,17 +85,17 @@ public:
                     case DS18B20MODEL: {
                         auto newSensor = std::make_shared<TempSensorOneWireBlock>();
                         newSensor->get().setDeviceAddress(newAddr);
-                        return std::move(newSensor);
+                        return newSensor;
                     }
                     case DS2413_FAMILY_ID: {
                         auto newDevice = std::make_shared<DS2413Block>();
                         newDevice->get().setDeviceAddress(newAddr);
-                        return std::move(newDevice);
+                        return newDevice;
                     }
                     case DS2408_FAMILY_ID: {
                         auto newDevice = std::make_shared<DS2408Block>();
                         newDevice->get().setDeviceAddress(newAddr);
-                        return std::move(newDevice);
+                        return newDevice;
                     }
                     default:
                         break;
@@ -106,5 +106,5 @@ public:
             }
         };
         return nullptr;
-    };
+    }
 };

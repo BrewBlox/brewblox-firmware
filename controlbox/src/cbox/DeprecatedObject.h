@@ -46,12 +46,12 @@ public:
         return CboxError::OK;
     }
 
-    virtual CboxError streamFrom(DataIn& out) override final
+    virtual CboxError streamFrom(DataIn&) override final
     {
         return CboxError::OBJECT_NOT_WRITABLE;
     }
 
-    virtual CboxError streamPersistedTo(DataOut& out) const override final
+    virtual CboxError streamPersistedTo(DataOut&) const override final
     {
         return CboxError::OBJECT_NOT_WRITABLE;
     }

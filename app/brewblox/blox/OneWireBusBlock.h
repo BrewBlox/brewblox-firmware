@@ -108,7 +108,7 @@ public:
         return res;
     }
 
-    virtual cbox::CboxError streamPersistedTo(cbox::DataOut& out) const override final
+    virtual cbox::CboxError streamPersistedTo(cbox::DataOut&) const override final
     {
         return cbox::CboxError::OK;
     }

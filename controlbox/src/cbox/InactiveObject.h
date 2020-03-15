@@ -35,7 +35,9 @@ private:
 
 public:
     InactiveObject(obj_type_t type)
-        : actualType(type){};
+        : actualType(type)
+    {
+    }
     virtual ~InactiveObject() = default;
 
     virtual CboxError streamTo(DataOut& out) const override final
@@ -44,12 +46,12 @@ public:
         return CboxError::OK;
     }
 
-    virtual CboxError streamFrom(DataIn& out) override final
+    virtual CboxError streamFrom(DataIn&) override final
     {
         return CboxError::OK;
     }
 
-    virtual CboxError streamPersistedTo(DataOut& out) const override final
+    virtual CboxError streamPersistedTo(DataOut&) const override final
     {
         return CboxError::PERSISTING_TO_INACTIVE_OBJECT; // inactive objects are never persisted
     }

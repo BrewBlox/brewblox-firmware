@@ -31,7 +31,7 @@ public:
     IirFilter(const uint8_t& idx, const int32_t& threshold = std::numeric_limits<int32_t>::max());
     ~IirFilter();
     static FilterParams const& FilterDefinition(const uint8_t idx);
-    static double const dcGain(uint8_t idx); // mainly for testing
+    static double dcGain(uint8_t idx); // mainly for testing
     bool add(const int32_t val);
     bool add(const int64_t val, uint8_t fractionBits);
     void setParamsIdx(const uint8_t);

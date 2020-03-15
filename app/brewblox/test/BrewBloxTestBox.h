@@ -41,7 +41,7 @@ public:
     TicksClass& ticks;
 
     BrewBloxTestBox();
-    ~BrewBloxTestBox(){};
+    ~BrewBloxTestBox() = default;
 
     void clearStreams();
 

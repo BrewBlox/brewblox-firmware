@@ -11,7 +11,7 @@ void
 handleReset(bool, uint8_t)
 {
     ++testInfo.rebootCount;
-};
+}
 
 /* mock implementation for device ID */
 unsigned
