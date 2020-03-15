@@ -28,10 +28,7 @@ jobs:
 
     steps:
       - checkout: self
-        fetchDepth: 1
         submodules: recursive
-      - script: pwd
-      - script: ls
       - bash: |
           bash build/compile-proto.sh
         displayName: Compile proto
