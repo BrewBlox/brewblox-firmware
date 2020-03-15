@@ -29,7 +29,8 @@ jobs:
     steps:
       - checkout: self
         submodules: recursive
-      - bash: |
+      
+        - bash: |
           bash build/compile-proto.sh
         displayName: Compile proto
 
@@ -38,7 +39,7 @@ jobs:
         displayName: Build tests
 
       - bash: |
-          bash run-tests.sh
+          bash build/run-tests.sh
         displayName: Run tests
 
   #########################################################
