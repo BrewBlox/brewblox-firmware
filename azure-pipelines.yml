@@ -5,10 +5,14 @@ resources:
 trigger:
   tags:
     include:
-      - "*"
+      - '*'
   branches:
     include:
-      - refs/heads/*
+      - '*'
+  pr:
+    branches:
+      include:
+      - '*'
 
 #########################################################
 # Tests
