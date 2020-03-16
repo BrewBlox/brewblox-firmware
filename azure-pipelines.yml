@@ -137,9 +137,9 @@ jobs:
 
     steps:
       - task: DownloadPipelineArtifact@2
-      inputs:  
-        artifact: FirmwareBin
-        path: $(Build.SourcesDirectory)/target
+        inputs:  
+          artifact: FirmwareBin
+          path: $(Build.SourcesDirectory)/build/target
       
       - bash: |
           git submodule init platform/spark/device-os
