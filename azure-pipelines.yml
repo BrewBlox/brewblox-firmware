@@ -141,7 +141,7 @@ jobs:
       artifact: FirmwareBin
       path: $(Build.SourcesDirectory)/target
       
-      - bash: 
+      - bash: |
           git submodule init platform/spark/device-os
           bash build-bin.sh
         workingDirectory: docker
