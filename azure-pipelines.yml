@@ -141,10 +141,8 @@ jobs:
       artifact: FirmwareBin
       path: $(Build.SourcesDirectory)/target
       
-      - script: git submodule init platform/spark/device-os
-        displayName: Init device-os submodule
-
-      - bash: |
+      - bash: 
+          git submodule init platform/spark/device-os
           bash build-bin.sh
         workingDirectory: docker
         displayName: Build Firmare bin container
