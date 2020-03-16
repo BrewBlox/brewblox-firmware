@@ -66,37 +66,33 @@ jobs:
 
 
   #########################################################
-  # Binaries
+  # Firmware Binaries
   #########################################################
-  - job: Binaries
+  - job: FirmwareBinaries
     pool:
       vmImage: "Ubuntu-18.04"
+    container: compiler
 
     steps:
+      - checkout: self
+      submodules: recursive
+      
       - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
+        bash build/compile-proto.sh
+      displayName: Compile proto
 
-      - bash: |
-          bash start-compiler.sh
-        workingDirectory: docker
-        displayName: Start compiler
 
-      - bash: |
-          bash build-bin.sh
-        workingDirectory: docker
-        displayName: Build
+      - script: make APP=brewblox PLATFORM=p1
+        workingDirectory: build
+        displayName: Build p1
+      
+      - script: make APP=brewblox PLATFORM=photon
+        workingDirectory: build
+        displayName: Build photon
+        
+      - publish: $(System.DefaultWorkingDirectory)/build/target
+        artifact: FirmwareBin
 
-      - bash: |
-          docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
-        workingDirectory: docker
-        displayName: Save image
-
-      - task: PublishBuildArtifacts@1
-        inputs:
-          path: 
-          pathtoPublish: "$(Build.ArtifactStagingDirectory)"
-          artifactName: bin
 
   #########################################################
   # Build Simulator Container
@@ -129,6 +125,39 @@ jobs:
           pathtoPublish: "$(Build.ArtifactStagingDirectory)"
           artifactName: simulator      
 
+  #########################################################
+  # Build Firmware Binaries Container
+  #########################################################
+  - job: BinariesContainer
+    pool:
+      vmImage: "Ubuntu-18.04"
+    dependsOn:
+      - Tests
+      - FirmwareBinary
+
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:  
+          artifact: FirmwareBin
+          path: $(Build.SourcesDirectory)/target
+      
+      - bash: |
+          bash build-bin.sh
+        workingDirectory: docker
+        displayName: Build Firmare bin container
+        env:
+          SKIP_BUILD: 1
+  
+      - bash: |
+          docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
+        workingDirectory: docker
+        displayName: Save image
+  
+      - task: PublishBuildArtifacts@1
+        inputs:
+          path: 
+          pathtoPublish: "$(Build.ArtifactStagingDirectory)"
+          artifactName: bin
 
   #########################################################
   # Deployment
@@ -139,7 +168,7 @@ jobs:
     dependsOn:
       - Tests
       - SimulatorContainer
-      - Binaries
+      - BinariesContainer
 
     variables:
       # Variables imported from brewblox group:
