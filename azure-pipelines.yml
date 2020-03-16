@@ -30,16 +30,13 @@ jobs:
       - checkout: self
         submodules: recursive
       
-      - bash: |
-          bash build/compile-proto.sh
+      - bash: build/compile-proto.sh
         displayName: Compile proto
 
-      - bash: |
-          bash build/build-tests.sh
+      - bash: build/build-tests.sh
         displayName: Build tests
 
-      - bash: |
-          bash build/run-tests.sh
+      - bash: build/run-tests.sh
         displayName: Run tests
 
   #########################################################
@@ -54,8 +51,7 @@ jobs:
       - checkout: self
         submodules: recursive
       
-      - bash: |
-          bash build/compile-proto.sh
+      - bash: build/compile-proto.sh
         displayName: Compile proto
 
       - script: make APP=brewblox PLATFORM=gcc
@@ -78,8 +74,7 @@ jobs:
       - checkout: self
         submodules: recursive
       
-      - bash: |
-          bash build/compile-proto.sh
+      - bash: build/compile-proto.sh
         displayName: Compile proto
 
       - script: make APP=brewblox PLATFORM=p1
@@ -95,9 +90,9 @@ jobs:
 
 
   #########################################################
-  # Simulator Container
+  # Simulator Image
   #########################################################
-  - job: SimulatorContainer
+  - job: SimulatorImage
     pool:
       vmImage: "Ubuntu-18.04"
     dependsOn:
@@ -110,13 +105,11 @@ jobs:
           artifact: SimulatorBin
           path: $(Build.SourcesDirectory)/docker/simulator/target
 
-      - bash: |
-          docker build --no-cache -t brewblox/firmware-simulator:local simulator
+      - script: docker build --no-cache -t brewblox/firmware-simulator:local simulator
         displayName: Build Image
         workingDirectory: docker
 
-      - bash: |
-          docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
+      - script: docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
         workingDirectory: docker
         displayName: Save image
 
@@ -126,9 +119,9 @@ jobs:
           artifactName: simulator      
 
   #########################################################
-  # Firmware Binaries Container
+  # Firmware Binaries Image
   #########################################################
-  - job: BinariesContainer
+  - job: BinariesImage
     pool:
       vmImage: "Ubuntu-18.04"
     dependsOn:
@@ -141,16 +134,15 @@ jobs:
           artifact: FirmwareBin
           path: $(Build.SourcesDirectory)/build/target
       
-      - bash: |
+      - script: |
           git submodule update --init ../platform/spark/device-os
           bash build-bin.sh
         workingDirectory: docker
-        displayName: Build Firmare bin container
+        displayName: Build Firmare binaries image
         env:
           SKIP_BUILD: 1
   
-      - bash: |
-          docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
+      - script: docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
         workingDirectory: docker
         displayName: Save image
   
@@ -168,8 +160,8 @@ jobs:
       vmImage: "Ubuntu-18.04"
     dependsOn:
       - Tests
-      - SimulatorContainer
-      - BinariesContainer
+      - SimulatorImage
+      - BinariesImage
 
     variables:
       # Variables imported from brewblox group:
@@ -187,8 +179,7 @@ jobs:
           echo "##vso[task.setvariable variable=brewblox.tag]$TAG"
         displayName: export build variables
 
-      - bash: |
-          echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin docker.io
+      - bash: echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin docker.io
         displayName: Docker login
         condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
