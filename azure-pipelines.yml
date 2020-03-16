@@ -60,6 +60,7 @@ jobs:
 
       - script: make APP=brewblox PLATFORM=gcc
         workingDirectory: build
+        displayName: Build executable
 
       - publish: $(System.DefaultWorkingDirectory)/build/target
         artifact: SimulatorBin
@@ -94,7 +95,7 @@ jobs:
 
 
   #########################################################
-  # Build Simulator Container
+  # Simulator Container
   #########################################################
   - job: SimulatorContainer
     pool:
@@ -125,7 +126,7 @@ jobs:
           artifactName: simulator      
 
   #########################################################
-  # Build Firmware Binaries Container
+  # Firmware Binaries Container
   #########################################################
   - job: BinariesContainer
     pool:
@@ -135,6 +136,8 @@ jobs:
       - FirmwareBinaries
 
     steps:
+      - checkout: self
+      
       - task: DownloadPipelineArtifact@2
         inputs:  
           artifact: FirmwareBin
