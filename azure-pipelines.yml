@@ -107,9 +107,10 @@ jobs:
       - Simulator
 
     steps:
-      - download: current
-        artifact: SimulatorBin
-        path: docker/simulator/target
+      - task: DownloadPipelineArtifact@2
+        inputs:  
+          artifact: SimulatorBin
+          path: $(Build.SourcesDirectory)/docker/simulator/target
 
       - bash: |
           docker build --no-cache -t brewblox/firmware-simulator:local simulator
