@@ -46,7 +46,7 @@ RUN mkdir -p /boost && curl -sSL https://s3.amazonaws.com/spark-assets/boost_$BO
   && export LD_LIBRARY_PATH="$BOOST_ROOT/stage/lib:$LD_LIBRARY_PATH" \
   && cd $BOOST_ROOT \
   && ./bootstrap.sh \  
-  && ./b2  --with-thread  --with-system --with-program_options --with-random --with-regex --threading=multi
+  && ./b2  --with-thread --with-system --with-program_options --with-random --with-regex --threading=single link=static runtime-link=static
 
 WORKDIR /firmware/build
 CMD bash

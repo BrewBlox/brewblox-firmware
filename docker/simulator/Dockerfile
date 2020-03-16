@@ -1,9 +1,9 @@
-FROM ubuntu:18.04
+FROM ubuntu:19.10
 
 COPY target/brewblox-gcc /target/brewblox-gcc
 WORKDIR /target/brewblox-gcc
 
-RUN touch device_key.der server_key.der eeprom.bin
+RUN chmod +x brewblox && touch device_key.der server_key.der eeprom.bin
 
 # status page
 EXPOSE 80
@@ -16,4 +16,4 @@ EXPOSE 5353/udp
 # websocket display emulation
 EXPOSE 7376
 
-CMD ./brewblox -i 123456789012345678901234
+CMD ./brewblox --device_id=123456789012345678901234
