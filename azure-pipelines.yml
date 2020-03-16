@@ -75,12 +75,11 @@ jobs:
 
     steps:
       - checkout: self
-      submodules: recursive
+        submodules: recursive
       
       - bash: |
-        bash build/compile-proto.sh
-      displayName: Compile proto
-
+          bash build/compile-proto.sh
+        displayName: Compile proto
 
       - script: make APP=brewblox PLATFORM=p1
         workingDirectory: build
