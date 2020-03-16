@@ -45,34 +45,23 @@ jobs:
   #########################################################
   # Simulator
   #########################################################
-  - job: Simulator
+  - job: Build simulator
     pool:
       vmImage: "Ubuntu-18.04"
+    container: compiler
 
     steps:
+      - checkout: self
+        submodules: recursive
+      
       - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
+          bash build/compile-proto.sh
+        displayName: Compile proto
 
-      - bash: |
-          bash start-compiler.sh
-        workingDirectory: docker
-        displayName: Start compiler
+      - script: make $MAKE_ARGS APP=brewblox PLATFORM=gcc
+      - publish: $(System.DefaultWorkingDirectory)/build/target
+        artifact: SimulatorBin
 
-      - bash: |
-          bash build-simulator.sh
-        workingDirectory: docker
-        displayName: Build
-
-      - bash: |
-          docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
-        workingDirectory: docker
-        displayName: Save image
-
-      - task: PublishBuildArtifacts@1
-        inputs:
-          pathtoPublish: "$(Build.ArtifactStagingDirectory)"
-          artifactName: simulator
 
   #########################################################
   # Binaries
@@ -103,8 +92,40 @@ jobs:
 
       - task: PublishBuildArtifacts@1
         inputs:
+          path: 
           pathtoPublish: "$(Build.ArtifactStagingDirectory)"
           artifactName: bin
+
+  #########################################################
+  # Build Simulator Container
+  #########################################################
+  - job: Simulator container
+    pool:
+      vmImage: "Ubuntu-18.04"
+    dependsOn:
+      - Tests
+      - Simulator
+
+    steps:
+      - download: current
+        artifact: SimulatorBin
+        path: docker/simulator/target
+
+      - bash: |
+          docker build --no-cache -t brewblox/firmware-simulator:local simulator
+        displayname: Build Image
+        workingDirectory: docker
+
+      - bash: |
+          docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
+        workingDirectory: docker
+        displayName: Save image
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathtoPublish: "$(Build.ArtifactStagingDirectory)"
+        artifactName: simulator      
+
 
   #########################################################
   # Deployment
