@@ -45,7 +45,7 @@ jobs:
   #########################################################
   # Simulator
   #########################################################
-  - job: Build simulator
+  - job: SimulatorBinary
     pool:
       vmImage: "Ubuntu-18.04"
     container: compiler
@@ -99,12 +99,12 @@ jobs:
   #########################################################
   # Build Simulator Container
   #########################################################
-  - job: Simulator container
+  - job: SimulatorContainer
     pool:
       vmImage: "Ubuntu-18.04"
     dependsOn:
       - Tests
-      - Simulator
+      - SimulatorBinary
 
     steps:
       - task: DownloadPipelineArtifact@2
@@ -136,7 +136,7 @@ jobs:
       vmImage: "Ubuntu-18.04"
     dependsOn:
       - Tests
-      - Simulator
+      - SimulatorContainer
       - Binaries
 
     variables:
