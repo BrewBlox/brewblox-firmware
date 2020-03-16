@@ -132,7 +132,7 @@ jobs:
       vmImage: "Ubuntu-18.04"
     dependsOn:
       - Tests
-      - FirmwareBinary
+      - FirmwareBinaries
 
     steps:
       - task: DownloadPipelineArtifact@2
