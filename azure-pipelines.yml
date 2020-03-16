@@ -114,7 +114,7 @@ jobs:
 
       - bash: |
           docker build --no-cache -t brewblox/firmware-simulator:local simulator
-        displayname: Build Image
+        displayName: Build Image
         workingDirectory: docker
 
       - bash: |
@@ -125,7 +125,7 @@ jobs:
       - task: PublishBuildArtifacts@1
         inputs:
           pathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        artifactName: simulator      
+          artifactName: simulator      
 
 
   #########################################################
