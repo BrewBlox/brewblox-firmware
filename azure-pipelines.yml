@@ -136,13 +136,14 @@ jobs:
       - FirmwareBinaries
 
     steps:
-      - checkout: self
-      
       - task: DownloadPipelineArtifact@2
-        inputs:  
-          artifact: FirmwareBin
-          path: $(Build.SourcesDirectory)/target
+      inputs:  
+      artifact: FirmwareBin
+      path: $(Build.SourcesDirectory)/target
       
+      - script: git submodule init platform/spark/device-os
+        displayName: Init device-os submodule
+
       - bash: |
           bash build-bin.sh
         workingDirectory: docker
