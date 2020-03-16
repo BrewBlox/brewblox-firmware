@@ -58,7 +58,9 @@ jobs:
           bash build/compile-proto.sh
         displayName: Compile proto
 
-      - script: make $MAKE_ARGS APP=brewblox PLATFORM=gcc
+      - script: make APP=brewblox PLATFORM=gcc
+        workingDirectory: build
+
       - publish: $(System.DefaultWorkingDirectory)/build/target
         artifact: SimulatorBin
 
