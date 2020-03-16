@@ -142,7 +142,7 @@ jobs:
           path: $(Build.SourcesDirectory)/build/target
       
       - bash: |
-          git submodule init ../platform/spark/device-os
+          git submodule update --init ../platform/spark/device-os
           bash build-bin.sh
         workingDirectory: docker
         displayName: Build Firmare bin container
