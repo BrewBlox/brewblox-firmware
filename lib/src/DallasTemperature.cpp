@@ -337,6 +337,7 @@ DallasTemperature::setResolution(const uint8_t* deviceAddress, uint8_t newResolu
         if (!isDS18S20Model(deviceAddress)) {
             uint8_t resolution;
 #if REQUIRESONLY12BITCONVERSION
+            (void)(newResolution); // prevent unused warning
             resolution = TEMP_12_BIT;
 #else
             switch (newResolution) {
@@ -595,6 +596,7 @@ DallasTemperature::calculateTemperature(const uint8_t* deviceAddress, uint8_t* s
     See - http://myarduinotoy.blogspot.co.uk/2013/02/12bit-result-from-ds18s20.html
      */
 
+    (void)(deviceAddress); // prevent unused warning
     if (isDS18S20Model(deviceAddress))
         rawTemperature = ((rawTemperature & 0xFFFE) << 3) + 12 - scratchPad[COUNT_REMAIN];
 

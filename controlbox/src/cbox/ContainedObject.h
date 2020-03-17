@@ -36,7 +36,9 @@ public:
         : _id(std::move(id))
         , _groups(std::move(groups))
         , _obj(std::move(obj))
-        , _nextUpdateTime(0){};
+        , _nextUpdateTime(0)
+    {
+    }
 
 private:
     obj_id_t _id;                 // unique id of object

@@ -6,11 +6,11 @@
 
 #define CNL_USE_INT128 false
 
-#include "../cnl/include/cnl/elastic_integer.h"
-#include "../cnl/include/cnl/num_traits.h"
-#include "../cnl/include/cnl/overflow_integer.h"
-#include "../cnl/include/cnl/scaled_integer.h"
-#include "../cnl/include/cnl/wide_integer.h"
+#include "cnl/elastic_integer.h"
+#include "cnl/num_traits.h"
+#include "cnl/overflow_integer.h"
+#include "cnl/scaled_integer.h"
+#include "cnl/wide_integer.h"
 #include <cstdint>
 
 template <

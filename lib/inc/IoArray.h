@@ -60,7 +60,7 @@ public:
             }
         }
         return false;
-    };
+    }
 
     // returns cached value for channel config, which is assumed to be equal to the last write
     bool readChannelConfig(uint8_t channel, ChannelConfig& result) const

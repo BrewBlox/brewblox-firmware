@@ -77,12 +77,13 @@ CPPSRC += /app/brewblox/AppTicks.cpp
 INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/third_party/catch2/catch2/single_include/catch2
 
 # spark HAL includes
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/inc
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/shared
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/services/inc
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/src/gcc
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/hal/src/newhal
-INCLUDE_DIRS += $(SOURCE_PATH)/platform/spark/device-os/wiring/inc
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/hal/inc
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/hal/shared
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/services/inc
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/hal/src/gcc
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/hal/src/newhal
+CPPFLAGS += -isystem $(SOURCE_PATH)/platform/spark/device-os/wiring/inc
+
 CPPSRC += /platform/spark/device-os/hal/src/gcc/gpio_hal.cpp
 CPPSRC += /platform/spark/device-os/hal/src/gcc/eeprom_hal.cpp
 CPPSRC += /platform/spark/device-os/hal/src/gcc/filesystem.cpp
@@ -98,7 +99,13 @@ CPPFLAGS += -isystem $(BOOST_ROOT)
 
 CFLAGS += $(patsubst %,-I%,$(INCLUDE_DIRS)) -I.
 CFLAGS += -ffunction-sections -Wall
-
+CFLAGS += -Wno-deprecated
+CFLAGS += -Wnull-dereference 
+CPPFLAGS += -fdiagnostics-show-template-tree -fno-elide-type # GCC8 required
+CFLAGS += -Wextra
+CFLAGS += -Wpedantic -Wvla -Wswitch-enum -fvar-tracking-assignments 
+CFLAGS += -Wduplicated-cond -Wduplicated-branches -rdynamic
+CPPFLAGS += -Wextra-semi
 
 # Flag compiler error for [-Wdeprecated-declarations]
 CFLAGS += -Werror=deprecated-declarations
@@ -126,6 +133,9 @@ LDFLAGS += -lgcov
 # Warn when functions and classes can be marked final
 # CPPFLAGS += -Wsuggest-final-types
 # CPPFLAGS += -Wsuggest-final-methods
+
+# set cnl as system includes to suppress warnings
+CPPFLAGS += -isystem $(SOURCE_PATH)/lib/cnl/include
 
 # include google protobuf dependencies
 CPPFLAGS += $(shell pkg-config --cflags protobuf)
@@ -170,8 +180,8 @@ runner: $(TARGETDIR)/$(TARGET)
 
 $(TARGETDIR)/$(TARGET) : $(BUILD_PATH) $(ALLOBJ)
 	@echo Building target: $@
-	$(MKDIR) $(dir $@)
-	$(LD) $(CFLAGS) $(ALLOBJ) --output $@ $(LDFLAGS)
+	@$(MKDIR) $(dir $@)
+	@$(LD) $(CFLAGS) $(ALLOBJ) --output $@ $(LDFLAGS)
 	@echo
 
 $(BUILD_PATH): 
@@ -182,22 +192,22 @@ $(BUILD_PATH):
 # C compiler to build .o from .c in $(BUILD_DIR)
 $(BUILD_PATH)%.o : $(SOURCE_PATH)%.c
 	@echo Building file: $<
-	$(MKDIR) $(dir $@)
-	$(CCC) $(CCFLAGS) -s -c -o $@ $<
+	@$(MKDIR) $(dir $@)
+	@$(CCC) $(CCFLAGS) -s -c -o $@ $<
 
 # CPP compiler to build .o from .cpp in $(BUILD_DIR)
 # Note: Calls standard $(CC) - gcc will invoke g++ as appropriate
 $(BUILD_PATH)%.o : $(SOURCE_PATH)%.cpp
 	@echo Building file: $<
-	$(MKDIR) $(dir $@)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -s -c -o $@ $<
+	@$(MKDIR) $(dir $@)
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -s -c -o $@ $<
 
 # Other Targets
 clean:	
 	$(RM) $(ALLOBJ) $(ALLDEPS) $(TARGETDIR)/$(TARGET)
 	$(RMDIR) $(TARGETDIR)
-	$(RMDIR) $(SOURCE_PATH)/app/brewblox/proto/cpp
-	$(RMDIR) $(SOURCE_PATH)/app/brewblox/proto/test
+	#$(RMDIR) $(SOURCE_PATH)/app/brewblox/proto/cpp
+	#$(RMDIR) $(SOURCE_PATH)/app/brewblox/proto/test
 	@echo
 
 # print variable by invoking make print-VARIABLE as VARIABLE = the_value_of_the_variable

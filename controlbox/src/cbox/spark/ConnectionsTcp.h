@@ -42,6 +42,7 @@ public:
 class TcpConnectionSource : public ConnectionSource {
 private:
     TCPServer server;
+    bool server_started = false;
 
 public:
     TcpConnectionSource(uint16_t port)
@@ -52,10 +53,16 @@ public:
     std::unique_ptr<Connection> newConnection() override final
     {
         if (spark::WiFi.ready() && !spark::WiFi.listening()) {
+            if (!server_started) {
+                server_started = server.begin();
+            }
+
             TCPClient newClient = server.available();
             if (newClient.connected()) {
                 return std::make_unique<TcpConnection>(std::move(newClient));
             }
+        } else {
+            server_started = false;
         }
         return nullptr;
     }

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "ActuatorDigitalConstrained.h"
-#include "blox/Block.h"
+#include "Block.h"
 #include "nanopb_callbacks.h"
 #include "proto/cpp/Mutex.pb.h"
 
 class MutexBlock : public Block<BrewBloxTypes_BlockType_Mutex> {
 private:
-    TimedMutex m_mutex;
+    MutexTarget m_mutex;
 
 public:
     MutexBlock() = default;
@@ -19,7 +19,7 @@ public:
         blox_Mutex newData = blox_Mutex_init_zero;
         cbox::CboxError result = streamProtoFrom(dataIn, &newData, blox_Mutex_fields, blox_Mutex_size);
         if (result == cbox::CboxError::OK) {
-            m_mutex.differentActuatorWait(newData.differentActuatorWait);
+            m_mutex.holdAfterTurnOff(newData.differentActuatorWait);
         }
         return result;
     }
@@ -28,8 +28,8 @@ public:
     streamTo(cbox::DataOut& out) const override final
     {
         blox_Mutex message = blox_Mutex_init_zero;
-        message.differentActuatorWait = m_mutex.differentActuatorWait();
-        message.waitRemaining = m_mutex.waitRemaining();
+        message.differentActuatorWait = m_mutex.holdAfterTurnOff();
+        message.waitRemaining = m_mutex.timeRemaining();
 
         return streamProtoTo(out, &message, blox_Mutex_fields, blox_Mutex_size);
     }
@@ -43,9 +43,7 @@ public:
     virtual cbox::update_t
     update(const cbox::update_t& now) override final
     {
-        // ensure mutex always has recent system time
-        m_mutex.update(now);
-        return now + 1;
+        return update_never(now);
     }
 
     virtual void*
@@ -54,15 +52,15 @@ public:
         if (iface == BrewBloxTypes_BlockType_Mutex) {
             return this; // me!
         }
-        if (iface == cbox::interfaceId<TimedMutex>()) {
+        if (iface == cbox::interfaceId<MutexTarget>()) {
             // return the member that implements the interface in this case
-            TimedMutex* ptr = &m_mutex;
+            MutexTarget* ptr = &m_mutex;
             return ptr;
         }
         return nullptr;
     }
 
-    TimedMutex&
+    MutexTarget&
     getMutex()
     {
         return m_mutex;

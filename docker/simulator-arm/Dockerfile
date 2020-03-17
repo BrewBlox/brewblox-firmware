@@ -1,4 +1,4 @@
-FROM ubuntu:19.10
+FROM multiarch/ubuntu-core:armhf-bionic
 
 COPY target/brewblox-gcc /target/brewblox-gcc
 WORKDIR /target/brewblox-gcc

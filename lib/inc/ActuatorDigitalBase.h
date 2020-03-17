@@ -42,6 +42,8 @@ public:
             return State::Inactive;
         case State::Inactive:
             return State::Active;
+        case State::Unknown:
+            return State::Unknown;
         default:
             return State::Unknown;
         }

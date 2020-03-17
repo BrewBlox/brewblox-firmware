@@ -117,12 +117,12 @@ boardInit()
     HAL_Pin_Mode(PIN_RS485_RX, INPUT);
     HAL_Pin_Mode(PIN_RS485_TX_EN, OUTPUT);
 
-    digitalWriteFast(PIN_TOUCH_CS, HIGH);
     HAL_Pin_Mode(PIN_TOUCH_CS, OUTPUT);
-    digitalWriteFast(PIN_LCD_CS, HIGH);
+    digitalWriteFast(PIN_TOUCH_CS, HIGH);
     HAL_Pin_Mode(PIN_LCD_CS, OUTPUT);
-    digitalWriteFast(PIN_SD_CS, HIGH);
+    digitalWriteFast(PIN_LCD_CS, HIGH);
     HAL_Pin_Mode(PIN_SD_CS, OUTPUT);
+    digitalWriteFast(PIN_SD_CS, HIGH);
     HAL_Pin_Mode(PIN_LCD_DC, OUTPUT);
     HAL_Pin_Mode(PIN_TOUCH_IRQ, INPUT);
 #endif
@@ -149,5 +149,7 @@ displayBrightness(uint8_t v)
 {
 #if defined(PIN_LCD_BACKLIGHT) && defined(SPARK)
     HAL_PWM_Write_With_Frequency(PIN_LCD_BACKLIGHT, v, 100);
+#else
+    (void)(v); // prevent unused warning
 #endif
 }

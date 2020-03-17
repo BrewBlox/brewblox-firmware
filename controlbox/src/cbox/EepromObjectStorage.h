@@ -205,6 +205,8 @@ public:
                     return CboxError::PERSISTED_BLOCK_STREAM_ERROR;
                 }
                 break;
+            case BlockType::invalid:
+                return CboxError::INVALID_PERSISTED_BLOCK_TYPE; // unknown block type encountered!
             default:
                 return CboxError::INVALID_PERSISTED_BLOCK_TYPE; // unknown block type encountered!
                 break;
@@ -315,13 +317,13 @@ private:
         writer.reset(EepromLocation(objects), EepromLocationSize(objects));
     }
 
-    static const uint16_t
+    static uint16_t
     blockHeaderLength()
     {
         return sizeof(BlockType) + sizeof(uint16_t);
     }
 
-    static const uint16_t
+    static uint16_t
     objectHeaderLength()
     {
         // actual size + id

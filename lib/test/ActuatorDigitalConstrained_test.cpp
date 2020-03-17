@@ -98,16 +98,20 @@ SCENARIO("Mutex contraint", "[constraints]")
     auto constrained1 = ActuatorDigitalConstrained(mock1);
     auto mock2 = ActuatorDigital([mockIo]() { return mockIo; }, 2);
     auto constrained2 = ActuatorDigitalConstrained(mock2);
-    auto mut = std::make_shared<TimedMutex>();
+    auto mut = std::make_shared<MutexTarget>();
 
     constrained1.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [&mut]() {
             return mut;
-        }));
+        },
+        0,
+        true));
     constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
         [&mut]() {
             return mut;
-        }));
+        },
+        0,
+        true));
 
     WHEN("Two actuators share a mutex, they cannot be active at the same time")
     {
@@ -142,59 +146,152 @@ SCENARIO("Mutex contraint", "[constraints]")
         CHECK(constrained2.state() == State::Inactive);
     }
 
-    WHEN("A minimum switch time of 1000 is set on the mutex and actuator 1 was active before")
+    WHEN("An extra hold time of 1000 is set on actuator 1, and it was active earlier")
     {
-        mut->differentActuatorWait(1000);
-        mut->update(now);
+        constrained1.removeAllConstraints();
+        constrained2.removeAllConstraints();
+        constrained1.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            1000, true));
+        constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            0, true));
+
         constrained1.desiredState(State::Active, ++now);
         CHECK(constrained1.state() == State::Active);
 
-        mut->update(now);
         constrained1.desiredState(State::Inactive, ++now);
         CHECK(constrained1.state() == State::Inactive);
 
         THEN("Actuator 1 can go active again immediately")
         {
-            mut->update(now);
             constrained1.desiredState(State::Active, ++now);
             CHECK(constrained1.state() == State::Active);
         }
 
         THEN("Actuator 2 has to wait until no actuator has been active for 1000ms")
         {
-            mut->update(now);
             constrained2.desiredState(State::Active, ++now);
             CHECK(constrained2.state() == State::Inactive);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 2000) {
-                mut->update(now);
-                constrained2.desiredState(State::Active, ++now);
+                ++now;
+                constrained1.update(now);
+                constrained2.update(now);
             }
             CHECK(now == 1002);
+
+            AND_THEN("Actuar 2 does not hold the mutex longer after turn off")
+            {
+                constrained2.desiredState(State::Inactive, ++now);
+                constrained1.desiredState(State::Active, ++now);
+                CHECK(constrained1.state() == State::Active);
+                CHECK(constrained2.state() == State::Inactive);
+            }
         }
 
         THEN("Toggling actuator 1 again resets the wait time")
         {
-            mut->update(now);
             constrained2.desiredState(State::Active, ++now);
             CHECK(constrained2.state() == State::Inactive);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 500) {
-                mut->update(now);
-                constrained2.desiredState(State::Active, ++now);
+                ++now;
+                constrained1.update(now);
+                constrained2.update(now);
             }
+            CHECK(mut->timeRemaining() == 502);
 
-            mut->update(now);
             constrained1.desiredState(State::Active, ++now);
             constrained1.desiredState(State::Inactive, ++now);
+            CHECK(mut->timeRemaining() == 1000);
 
             while (constrained2.state() != State::Active && now < 2000) {
-                mut->update(now);
-                constrained2.desiredState(State::Active, ++now);
-                constrained2.desiredState(State::Active, ++now);
+                ++now;
+                constrained1.update(now);
+                constrained2.update(now);
             }
 
             CHECK(now == 1502);
+        }
+
+        THEN("When the Mutex target is unavailable the actuators cannot go active, but already active actuators will reference their old mutex until it unlocks")
+        {
+            mut.reset();
+            constrained1.desiredState(State::Active, ++now);
+            constrained2.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Active);
+            CHECK(constrained2.state() == State::Inactive);
+
+            constrained1.desiredState(State::Inactive, ++now);
+            CHECK(constrained1.state() == State::Inactive);
+            constrained1.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Active);
+            constrained1.desiredState(State::Inactive, ++now);
+            now += 1000;
+            constrained1.desiredState(State::Inactive, ++now);
+            constrained1.desiredState(State::Active, ++now);
+            CHECK(constrained1.state() == State::Inactive);
+        }
+    }
+
+    WHEN("A default extra hold time of 1000ms is set on the Mutex and only act 2 has a custom hold time of 100ms")
+    {
+        mut->holdAfterTurnOff(1000);
+
+        constrained1.removeAllConstraints();
+        constrained2.removeAllConstraints();
+        constrained1.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            0, false));
+        constrained2.addConstraint(std::make_unique<ADConstraints::Mutex<3>>(
+            [&mut]() {
+                return mut;
+            },
+            100, true));
+
+        constrained1.desiredState(State::Active, ++now);
+        CHECK(constrained1.state() == State::Active);
+
+        constrained1.desiredState(State::Inactive, ++now);
+        CHECK(constrained1.state() == State::Inactive);
+
+        THEN("Actuator 2 has to wait until actuator 1 has been inactive for 1000ms")
+        {
+            constrained2.desiredState(State::Active, ++now);
+            CHECK(constrained2.state() == State::Inactive);
+
+            while (constrained2.state() != State::Active && now < 2000) {
+                ++now;
+                constrained1.update(now);
+                constrained2.update(now);
+            }
+            CHECK(now == 1002);
+            CHECK(constrained1.state() == State::Inactive);
+            CHECK(constrained2.state() == State::Active);
+
+            WHEN("Actuator 2 turns off, it holds the mutex for 100ms")
+            {
+                constrained2.desiredState(State::Inactive, ++now);
+                constrained1.desiredState(State::Active, ++now);
+                CHECK(constrained1.state() == State::Inactive);
+                CHECK(constrained2.state() == State::Inactive);
+
+                while (constrained1.state() != State::Active && now < 2000) {
+                    ++now;
+                    constrained1.update(now);
+                    constrained2.update(now);
+                }
+                CHECK(now == 1104);
+            }
         }
     }
 
@@ -214,5 +311,49 @@ SCENARIO("Mutex contraint", "[constraints]")
 
         CHECK(inactiveTimes.start == 6000);
         CHECK(inactiveTimes.end == 8000);
+    }
+
+    WHEN("Try to create deadlock with errouneous actuator")
+    {
+        WHEN("Target IO module cannot be reached")
+        {
+            mockIo->connected(false); // emulate disconnect
+
+            THEN("Desired state is still set correctly")
+            {
+                CHECK(constrained1.desiredState() == State::Inactive);
+                CHECK(constrained2.desiredState() == State::Inactive);
+                CHECK(constrained1.state() == State::Unknown);
+                CHECK(constrained2.state() == State::Unknown);
+
+                constrained1.desiredState(State::Active, 2004);
+                constrained2.desiredState(State::Active, 2005);
+                constrained1.update(2006);
+                constrained2.update(2006);
+                CHECK(constrained1.desiredState() == State::Active);
+                CHECK(constrained2.desiredState() == State::Active);
+                CHECK(constrained1.state() == State::Unknown);
+                CHECK(constrained2.state() == State::Unknown);
+
+                AND_WHEN("The actuators are both turned off while disconnected")
+                {
+                    constrained1.desiredState(State::Inactive, 2007);
+                    constrained2.desiredState(State::Inactive, 2008);
+                    AND_WHEN("The target is connected again")
+                    {
+                        mockIo->connected(true);
+                        THEN("Turning the actuators is still handled correctly by the mutex")
+                        {
+                            constrained1.desiredState(State::Active, 2009);
+                            constrained2.desiredState(State::Active, 2010);
+                            CHECK(constrained1.desiredState() == State::Active);
+                            CHECK(constrained2.desiredState() == State::Active);
+                            CHECK(constrained1.state() == State::Active);
+                            CHECK(constrained2.state() == State::Inactive);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

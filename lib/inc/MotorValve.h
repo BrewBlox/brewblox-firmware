@@ -157,7 +157,7 @@ public:
         }
 
         return vs;
-    };
+    }
 
     void update()
     {

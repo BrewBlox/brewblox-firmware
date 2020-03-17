@@ -26,9 +26,13 @@ namespace cbox {
 class obj_type_t {
 public:
     obj_type_t()
-        : id(0){};
+        : id(0)
+    {
+    }
     obj_type_t(const uint16_t& rhs)
-        : id(rhs){};
+        : id(rhs)
+    {
+    }
     obj_type_t(const obj_type_t& rhs) = default;
     obj_type_t(obj_type_t& rhs) = default;
     obj_type_t(obj_type_t&& rhs) = default;
@@ -52,11 +56,11 @@ public:
     static const obj_type_t start()
     {
         return obj_type_t(1);
-    };
+    }
     static const obj_type_t invalid()
     {
         return obj_type_t(0);
-    };
+    }
 
 private:
     uint16_t id;
@@ -65,9 +69,13 @@ private:
 class obj_id_t {
 public:
     obj_id_t()
-        : id(0){};
+        : id(0)
+    {
+    }
     obj_id_t(const uint16_t& rhs)
-        : id(rhs){};
+        : id(rhs)
+    {
+    }
     obj_id_t& operator=(const uint16_t& rhs)
     {
         id = rhs;
@@ -87,11 +95,11 @@ public:
     static const obj_id_t start()
     {
         return obj_id_t(1);
-    };
+    }
     static const obj_id_t invalid()
     {
         return obj_id_t(0);
-    };
+    }
 
     obj_id_t& operator++() // ++A
     {

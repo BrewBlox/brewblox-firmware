@@ -8,7 +8,7 @@ struct __attribute__((packed)) EepromLayout {
         struct {
             uint8_t magic;
             uint8_t version;
-        };
+        } MagicVersion;
     };
     uint8_t reserved[30];
     uint8_t objects[2048 - (eepromStart + 2 + 30)];

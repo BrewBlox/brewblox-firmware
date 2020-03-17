@@ -11,13 +11,16 @@ OUT_DIR="./firmware-bin/source"
 rm -rf "${OUT_DIR}" || true
 mkdir "${OUT_DIR}"
 
-docker-compose exec -T compiler \
-    bash -c '
-        set -e
-        bash compile-proto.sh
-        make $MAKE_ARGS APP=brewblox PLATFORM=p1
-        make $MAKE_ARGS APP=brewblox PLATFORM=photon
-    '
+if [ -z "$SKIP_BUILD" ]
+then
+    docker-compose exec -T compiler \
+        bash -c "
+            set -e
+            bash compile-proto.sh
+            make $MAKE_ARGS APP=brewblox PLATFORM=p1
+            make $MAKE_ARGS APP=brewblox PLATFORM=photon
+        "
+fi
 
 cp ../build/target/brewblox-p1/brewblox.bin "${OUT_DIR}"/brewblox-p1.bin
 curl -fL -o "${OUT_DIR}"/bootloader-p1.bin ${PARTICLE_RELEASES}/p1-bootloader@${PARTICLE_VERSION}+lto.bin

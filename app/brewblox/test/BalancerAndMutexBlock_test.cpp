@@ -93,10 +93,10 @@ SCENARIO("Two pin actuators are constrained by a mutex", "[balancer, mutex]")
             auto decoded = blox::Mutex();
             testBox.processInputToProto(decoded);
             CHECK(testBox.lastReplyHasStatusOk());
-            CHECK(decoded.ShortDebugString() == "differentActuatorWait: 100");
+            CHECK(decoded.ShortDebugString() == "differentActuatorWait: 100 waitRemaining: 100");
         }
 
-        // read a pin actuator 1, which is active
+        // read pin actuator 1, which is active
         testBox.put(uint16_t(0)); // msg id
         testBox.put(commands::READ_OBJECT);
         testBox.put(pin1Id);
@@ -105,10 +105,10 @@ SCENARIO("Two pin actuators are constrained by a mutex", "[balancer, mutex]")
             auto decoded = blox::DigitalActuator();
             testBox.processInputToProto(decoded);
             CHECK(testBox.lastReplyHasStatusOk());
-            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 1 state: Active constrainedBy { constraints { mutex: 101 } } desiredState: Active");
+            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 1 state: Active constrainedBy { constraints { mutexed { mutexId: 101 hasLock: true } } } desiredState: Active");
         }
 
-        // read a pin actuator 2, which is constrained and inactive
+        // read pin actuator 2, which is constrained and inactive
         testBox.put(uint16_t(0)); // msg id
         testBox.put(commands::READ_OBJECT);
         testBox.put(pin2Id);
@@ -117,7 +117,7 @@ SCENARIO("Two pin actuators are constrained by a mutex", "[balancer, mutex]")
             auto decoded = blox::DigitalActuator();
             testBox.processInputToProto(decoded);
             CHECK(testBox.lastReplyHasStatusOk());
-            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 2 constrainedBy { constraints { mutex: 101 limiting: true } } desiredState: Active");
+            CHECK(decoded.ShortDebugString() == "hwDevice: 19 channel: 2 constrainedBy { constraints { mutexed { mutexId: 101 } remaining: 101 } } desiredState: Active");
         }
     }
 

@@ -1,14 +1,21 @@
 resources:
   repositories:
     - repository: self
-
+  containers: 
+    - container: compiler
+      image: brewblox/firmware-compiler:arm-gcc-8
+      
 trigger:
   tags:
     include:
-      - "*"
+      - '*'
   branches:
     include:
-      - refs/heads/*
+      - '*'
+pr:
+  branches:
+    include:
+      - '*'
 
 #########################################################
 # Tests
@@ -16,94 +23,132 @@ trigger:
 jobs:
   - job: Tests
     pool:
-      vmImage: "Ubuntu-16.04"
+      vmImage: "Ubuntu-18.04"
+    container: compiler
 
     steps:
-      - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
-
-      - bash: |
-          bash start-compiler.sh
-        workingDirectory: docker
-        displayName: Start compiler
-
-      - bash: |
-          docker-compose exec -T compiler bash compile-proto.sh
-        workingDirectory: docker
+      - checkout: self
+        submodules: recursive
+      
+      - bash: build/compile-proto.sh
         displayName: Compile proto
 
-      - bash: |
-          docker-compose exec -T compiler bash build-tests.sh
-        workingDirectory: docker
+      - bash: build/build-tests.sh
         displayName: Build tests
 
-      - bash: |
-          docker-compose exec -T compiler bash run-tests.sh
-        workingDirectory: docker
+      - bash: build/run-tests.sh
         displayName: Run tests
 
   #########################################################
   # Simulator
   #########################################################
-  - job: Simulator
+  - job: SimulatorBinary
     pool:
-      vmImage: "Ubuntu-16.04"
+      vmImage: "Ubuntu-18.04"
+    container: compiler
 
     steps:
-      - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
+      - checkout: self
+        submodules: recursive
+      
+      - bash: build/compile-proto.sh
+        displayName: Compile proto
 
-      - bash: |
-          bash start-compiler.sh
+      - script: make APP=brewblox PLATFORM=gcc
+        workingDirectory: build
+        displayName: Build executable
+
+      - publish: $(System.DefaultWorkingDirectory)/build/target
+        artifact: SimulatorBin
+
+
+  #########################################################
+  # Firmware Binaries
+  #########################################################
+  - job: FirmwareBinaries
+    pool:
+      vmImage: "Ubuntu-18.04"
+    container: compiler
+
+    steps:
+      - checkout: self
+        submodules: recursive
+      
+      - bash: build/compile-proto.sh
+        displayName: Compile proto
+
+      - script: make APP=brewblox PLATFORM=p1
+        workingDirectory: build
+        displayName: Build p1
+      
+      - script: make APP=brewblox PLATFORM=photon
+        workingDirectory: build
+        displayName: Build photon
+        
+      - publish: $(System.DefaultWorkingDirectory)/build/target
+        artifact: FirmwareBin
+
+
+  #########################################################
+  # Simulator Image
+  #########################################################
+  - job: SimulatorImage
+    pool:
+      vmImage: "Ubuntu-18.04"
+    dependsOn:
+      - Tests
+      - SimulatorBinary
+
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:  
+          artifact: SimulatorBin
+          path: $(Build.SourcesDirectory)/docker/simulator/target
+
+      - script: docker build --no-cache -t brewblox/firmware-simulator:local simulator
+        displayName: Build Image
         workingDirectory: docker
-        displayName: Start compiler
 
-      - bash: |
-          bash build-simulator.sh
-        workingDirectory: docker
-        displayName: Build
-
-      - bash: |
-          docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
+      - script: docker save brewblox/firmware-simulator:local > $(Build.ArtifactStagingDirectory)/simulator.tar
         workingDirectory: docker
         displayName: Save image
 
       - task: PublishBuildArtifacts@1
         inputs:
           pathtoPublish: "$(Build.ArtifactStagingDirectory)"
-          artifactName: simulator
+          artifactName: simulator      
 
   #########################################################
-  # Binaries
+  # Firmware Binaries Image
   #########################################################
-  - job: Binaries
+  - job: BinariesImage
     pool:
-      vmImage: "Ubuntu-16.04"
+      vmImage: "Ubuntu-18.04"
+    dependsOn:
+      - Tests
+      - FirmwareBinaries
 
     steps:
-      - bash: |
-          git submodule update --init --recursive --jobs 4
-        displayName: Init submodules
-
-      - bash: |
-          bash start-compiler.sh
-        workingDirectory: docker
-        displayName: Start compiler
-
-      - bash: |
+      - task: DownloadPipelineArtifact@2
+        inputs:  
+          artifact: FirmwareBin
+          path: $(Build.SourcesDirectory)/build/target
+      
+      - script: |
+          git submodule update --init ../platform/spark/device-os
           bash build-bin.sh
         workingDirectory: docker
-        displayName: Build
-
-      - bash: |
-          docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
+        displayName: Build Firmare binaries image
+        env:
+          SKIP_BUILD: 1
+  
+      - script: docker save brewblox/firmware-bin:local > $(Build.ArtifactStagingDirectory)/bin.tar
         workingDirectory: docker
         displayName: Save image
-
+  
       - task: PublishBuildArtifacts@1
         inputs:
+          path: 
           pathtoPublish: "$(Build.ArtifactStagingDirectory)"
           artifactName: bin
 
@@ -112,11 +157,11 @@ jobs:
   #########################################################
   - job: Deploy
     pool:
-      vmImage: "Ubuntu-16.04"
+      vmImage: "Ubuntu-18.04"
     dependsOn:
       - Tests
-      - Simulator
-      - Binaries
+      - SimulatorImage
+      - BinariesImage
 
     variables:
       # Variables imported from brewblox group:
@@ -134,8 +179,7 @@ jobs:
           echo "##vso[task.setvariable variable=brewblox.tag]$TAG"
         displayName: export build variables
 
-      - bash: |
-          echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin docker.io
+      - bash: echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USER) --password-stdin docker.io
         displayName: Docker login
         condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 

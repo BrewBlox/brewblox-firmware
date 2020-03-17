@@ -37,7 +37,9 @@ public:
     using value_type = T;
 
     FpFilterChain(uint8_t idx)
-        : readIdx(idx){};
+        : readIdx(idx)
+    {
+    }
     ~FpFilterChain() = default;
 
     void add(const value_type& val)
@@ -85,7 +87,7 @@ public:
     uint8_t length() const
     {
         return chain.length();
-    };
+    }
 
     // get the derivative from the chain with max precision and convert to the requested FP precision
     template <typename U>

@@ -131,9 +131,10 @@ setup()
     StartupScreen::setProgress(10);
     StartupScreen::setStep("Power cycling peripherals");
 
-    while (ticks.millis() < 2000) {
+    do {
         displayTick();
-    };
+    } while (ticks.millis() < 2000);
+
     enablePheripheral5V(true);
     HAL_Delay_Milliseconds(1);
 

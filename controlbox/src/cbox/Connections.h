@@ -83,7 +83,7 @@ public:
     virtual uint8_t next() override
     {
         return uint8_t(stream.read());
-    };
+    }
 
     virtual uint8_t peek() override
     {
