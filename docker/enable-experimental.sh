@@ -12,6 +12,7 @@ command -v jq > /dev/null || sudo apt-get install -y jq
 
 if [ ! -f "$CLIENT_CFG" ]; then
     echo "Creating $CLIENT_CFG"
+    mkdir -p "$(dirname "$CLIENT_CFG")"
     echo '{}' > "$CLIENT_CFG"
 fi;
 
@@ -24,6 +25,7 @@ fi;
 
 if [ ! -f "$SERVER_CFG" ]; then
     echo "Creating $SERVER_CFG"
+    sudo mkdir -p "$(dirname "$SERVER_CFG")"
     echo '{}' | sudo tee "$SERVER_CFG"
 fi;
 
