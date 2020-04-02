@@ -57,11 +57,11 @@
 using EepromAccessImpl = cbox::SparkEepromAccess;
 
 #if defined(SPARK)
-#include "spark_wiring_led.h"
+#include "rgbled.h"
 void
 changeLedColor()
 {
-    RGB.color(RGB_COLOR_MAGENTA);
+    LED_SetRGBColor(RGB_COLOR_MAGENTA);
 }
 extern void
 updateFirmwareFromStream(cbox::StreamType streamType);
