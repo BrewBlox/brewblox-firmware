@@ -199,7 +199,7 @@ wifiInit()
 }
 
 void
-updateFirmwareStreamHandler(Stream& stream)
+updateFirmwareStreamHandler(Stream* stream)
 {
     enum class DCMD : uint8_t {
         None,
@@ -212,31 +212,34 @@ updateFirmwareStreamHandler(Stream& stream)
 
     while (true) {
         HAL_Delay_Milliseconds(1);
-        int recv = stream.read();
+        int recv = stream->read();
         switch (recv) {
         case 'F':
             command = DCMD::FlashFirmware;
             break;
         case '\n':
             if (command == DCMD::Ack) {
-                stream.write("<!FIRMWARE_UPDATER,");
-                stream.write(versionCsv());
-                stream.write(">\n");
-                stream.flush();
+                stream->write("<!FIRMWARE_UPDATER,");
+                stream->write(versionCsv());
+                stream->write(">\n");
+                stream->flush();
+                HAL_Delay_Milliseconds(10);
             } else if (command == DCMD::FlashFirmware) {
-                stream.write("<!READY_FOR_FIRMWARE>\n");
-                stream.flush();
-#if PLATFORM_ID != PLATFORM_GCC
-                system_firmwareUpdate(&stream);
-#else
+                stream->write("<!READY_FOR_FIRMWARE>\n");
+                stream->flush();
+                HAL_Delay_Milliseconds(10);
+#if PLATFORM_ID == PLATFORM_GCC
                 // just exit for sim
                 HAL_Core_System_Reset_Ex(RESET_REASON_UPDATE, 0, nullptr);
+#else
+                system_firmwareUpdate(stream);
 #endif
 
                 break;
             } else {
-                stream.write("<Invalid command received>\n");
-                stream.flush();
+                stream->write("<Invalid command received>\n");
+                stream->flush();
+                HAL_Delay_Milliseconds(10);
                 if (++invalidCommands > 2) {
                     return;
                 }
@@ -261,16 +264,17 @@ updateFirmwareFromStream(cbox::StreamType streamType)
         if (ser.baud() == 0) {
             ser.begin(115200);
         }
-        updateFirmwareStreamHandler(ser);
+        updateFirmwareStreamHandler(&ser);
     } else {
         TCPServer server(8332); // re-open TCP server
 
         while (true) {
             HAL_Delay_Milliseconds(10); // allow thread switch so system thread can set up client
-            TCPClient client = server.available();
-            if (client) {
-                updateFirmwareStreamHandler(client);
-                client.stop();
+            {
+                TCPClient client = server.available();
+                if (client) {
+                    updateFirmwareStreamHandler(&client);
+                }
             }
         }
     }
