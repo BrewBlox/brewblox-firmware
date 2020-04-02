@@ -58,10 +58,18 @@ using EepromAccessImpl = cbox::SparkEepromAccess;
 
 #if defined(SPARK)
 #include "spark_wiring_led.h"
+void
+changeLedColor()
+{
+    RGB.color(RGB_COLOR_MAGENTA);
+}
 extern void
 updateFirmwareFromStream(cbox::StreamType streamType);
 #else
-
+void
+changeLedColor()
+{
+}
 void updateFirmwareFromStream(cbox::StreamType)
 {
 }
@@ -307,7 +315,7 @@ applicationCommand(uint8_t cmdId, cbox::DataIn& in, cbox::EncodedDataOut& out)
         out.write(asUint8(status));
         out.endMessage();
         if (status == CboxError::OK) {
-            RGB.color(RGB_COLOR_MAGENTA);
+            changeLedColor();
             theConnectionPool().closeAll();
             updateFirmwareFromStream(in.streamType());
             uint8_t reason = uint8_t(RESET_USER_REASON::FIRMWARE_UPDATE_FAILED);
