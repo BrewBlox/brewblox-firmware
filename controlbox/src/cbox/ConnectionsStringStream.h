@@ -64,6 +64,12 @@ public:
     {
         return !(in->bad() || out->bad()); // use badbit of either stream to simulate disconnect
     }
+
+    virtual void stop() override final
+    {
+        in->setstate(std::istream::badbit);
+        out->setstate(std::ostream::badbit);
+    }
 };
 
 class StringStreamConnectionSource : public ConnectionSource {
