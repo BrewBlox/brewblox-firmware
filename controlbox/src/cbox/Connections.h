@@ -45,6 +45,7 @@ public:
     virtual DataOut& getDataOut() = 0;
     virtual DataIn& getDataIn() = 0;
     virtual bool isConnected() = 0;
+    virtual void stop() = 0;
 };
 
 class ConnectionSource {
@@ -269,7 +270,11 @@ public:
 
     void closeAll()
     {
-        connections.clear();
+        for (auto& c : connections) {
+            // don't delete connections here.
+            // stop them, and let updateConnections destroy them when they are disconnected.
+            c->stop();
+        }
         for (auto& source : connectionSources) {
             source.get().stop();
         }

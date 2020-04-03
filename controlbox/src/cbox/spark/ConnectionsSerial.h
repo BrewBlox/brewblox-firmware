@@ -34,8 +34,13 @@ public:
     }
     virtual ~SerialConnection()
     {
-        SerialInUse = false;
+        stop();
     };
+
+    virtual void stop() override final
+    {
+        SerialInUse = false;
+    }
 };
 
 class SerialConnectionSource : public ConnectionSource {

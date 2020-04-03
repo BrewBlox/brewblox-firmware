@@ -34,7 +34,10 @@ public:
     }
     ~TcpConnection()
     {
-        get().flush();
+    }
+
+    virtual void stop() override final
+    {
         get().stop();
     }
 };
