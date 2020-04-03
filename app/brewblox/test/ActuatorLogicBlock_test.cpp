@@ -309,6 +309,41 @@ SCENARIO("Test", "[maklogicblock]")
             CHECK(result.result() == blox::ActuatorLogic_Result_EMPTY_SUBSTRING);
             CHECK(result.errorpos() == 5);
 
+            message.set_expression("a|&b");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPERATOR);
+            CHECK(result.errorpos() == 2);
+
+            message.set_expression("a||b");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPERATOR);
+            CHECK(result.errorpos() == 2);
+
+            message.set_expression("a&|b");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPERATOR);
+            CHECK(result.errorpos() == 2);
+
+            message.set_expression("a^|b");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPERATOR);
+            CHECK(result.errorpos() == 2);
+
+            message.set_expression("a!&b");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPERATOR);
+            CHECK(result.errorpos() == 2);
+
+            message.set_expression("ab");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_COMPARISON);
+            CHECK(result.errorpos() == 1);
+
+            message.set_expression("a(");
+            result = setLogic(message);
+            CHECK(result.result() == blox::ActuatorLogic_Result_UNEXPECTED_OPENING_BRACKET);
+            CHECK(result.errorpos() == 1);
+
             testBox.put(uint16_t(0)); // msg id
             testBox.put(commands::DELETE_OBJECT);
             testBox.put(cbox::obj_id_t(102));

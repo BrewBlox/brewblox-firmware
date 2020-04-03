@@ -275,12 +275,18 @@ private:
             auto c = *it;
             ++it;
             if ('a' <= c && c <= 'z') {
+                if (res != blox_ActuatorLogic_Result_EMPTY_SUBSTRING) {
+                    return blox_ActuatorLogic_Result_UNEXPECTED_COMPARISON;
+                }
                 auto compare = digitals.cbegin() + (c - 'a');
                 if (compare >= digitals.cend()) {
                     return blox_ActuatorLogic_Result_INVALID_DIG_COMPARE_IDX;
                 }
                 res = compare->result();
             } else if ('A' <= c && c <= 'Z') {
+                if (res != blox_ActuatorLogic_Result_EMPTY_SUBSTRING) {
+                    return blox_ActuatorLogic_Result_UNEXPECTED_COMPARISON;
+                }
                 auto compare = analogs.cbegin() + (c - 'A');
                 if (compare >= analogs.cend()) {
                     return blox_ActuatorLogic_Result_INVALID_ANA_COMPARE_IDX;
@@ -296,6 +302,9 @@ private:
                 }
                 return blox_ActuatorLogic_Result_TRUE;
             } else if (c == '|') {
+                if (res == blox_ActuatorLogic_Result_EMPTY_SUBSTRING) {
+                    return blox_ActuatorLogic_Result_UNEXPECTED_OPERATOR;
+                }
                 auto rhs = eval(it, level);
                 if (rhs > blox_ActuatorLogic_Result_TRUE) {
                     return rhs; // error
@@ -305,6 +314,9 @@ private:
                 }
                 return rhs;
             } else if (c == '&') {
+                if (res == blox_ActuatorLogic_Result_EMPTY_SUBSTRING) {
+                    return blox_ActuatorLogic_Result_UNEXPECTED_OPERATOR;
+                }
                 auto rhs = eval(it, level);
                 if (rhs > blox_ActuatorLogic_Result_TRUE) {
                     return rhs; // error
@@ -314,6 +326,9 @@ private:
                 }
                 return res;
             } else if (c == '^') {
+                if (res == blox_ActuatorLogic_Result_EMPTY_SUBSTRING) {
+                    return blox_ActuatorLogic_Result_UNEXPECTED_OPERATOR;
+                }
                 auto rhs = eval(it, level);
                 if (rhs != blox_ActuatorLogic_Result_TRUE && rhs != blox_ActuatorLogic_Result_FALSE) {
                     return rhs; // error
