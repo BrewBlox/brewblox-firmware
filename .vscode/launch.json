@@ -118,6 +118,7 @@
       "executable": "./build/target/brewblox-p1/brewblox.elf",
       "debuggerArgs": [
         "-command=./tools/system.gdbinit",
+        "-command=./tools/pretty.gdbinit",
       ],
       "rtos": "FreeRTOS",
       "device": "STM32F205RG",
@@ -126,8 +127,10 @@
         "/usr/local/share/openocd/scripts/target/stm32f2x.cfg"
       ],
       "armToolchainPath": "/home/elco/source/gcc-arm-none-eabi-5_3-2016q1/bin",
-      //      "showDevDebugOutput": true,
-      "svdFile": "./tools/STM32F215.svd"
+      // sudo apt-get install libpython2.7:i386 for the line below to work
+      "gdbpath": "/home/elco/source/gcc-arm-none-eabi-5_3-2016q1/bin/arm-none-eabi-gdb-py", // hidden setting
+      "showDevDebugOutput": true,
+      "svdFile": "./tools/STM32F215.svd",
     },
     {
       "name": "wifi-test p1 openocd debug",
@@ -144,7 +147,8 @@
         "/home/elco/opt/openocd/tcl/interface/stlink.cfg",
         "/home/elco/opt/openocd/tcl/target/stm32f2x.cfg"
       ],
-      "armToolchainPath": "/home/elco/source/gcc-arm-none-eabi-5_3-2016q1/bin",
+      "armToolchainPath": "/home/elco/source/gcc-arm-none-eabi-_3-2016q1/bin",
+      "gdbpath": "/home/elco/source/gcc-arm-none-eabi-_3-2016q1/bin/arm-none-eabi-gdb-py", // hidden setting
       "showDevDebugOutput": true,
       "svdFile": "./tools/STM32F215.svd",
       "rtos": "FreeRTOS",
