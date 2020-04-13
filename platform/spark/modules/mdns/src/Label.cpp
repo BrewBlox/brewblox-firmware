@@ -206,7 +206,7 @@ Label::matched(uint16_t type, uint16_t cls)
 {
 }
 
-HostLabel::HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
+HostLabel::HostLabel(std::shared_ptr<Record> aRecord, std::shared_ptr<Record> nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
@@ -228,14 +228,14 @@ HostLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-ServiceLabel::ServiceLabel(Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
+ServiceLabel::ServiceLabel(std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
 }
 
 void
-ServiceLabel::addInstance(Record* ptrRecord, Record* srvRecord, Record* txtRecord)
+ServiceLabel::addInstance(std::shared_ptr<Record> ptrRecord, std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord)
 {
     ptrRecords.push_back(ptrRecord);
     srvRecords.push_back(srvRecord);
@@ -248,21 +248,23 @@ ServiceLabel::matched(uint16_t type, uint16_t cls)
     switch (type) {
     case PTR_TYPE:
     case ANY_TYPE:
-        for (std::vector<Record*>::const_iterator i = ptrRecords.begin(); i != ptrRecords.end(); ++i) {
-            (*i)->setAnswerRecord();
+        for (auto& r : ptrRecords) {
+            r->setAnswerRecord();
         }
-        for (std::vector<Record*>::const_iterator i = srvRecords.begin(); i != srvRecords.end(); ++i) {
-            (*i)->setAdditionalRecord();
+        for (auto& r : srvRecords) {
+
+            r->setAdditionalRecord();
         }
-        for (std::vector<Record*>::const_iterator i = txtRecords.begin(); i != txtRecords.end(); ++i) {
-            (*i)->setAdditionalRecord();
+        for (auto& r : txtRecords) {
+
+            r->setAdditionalRecord();
         }
         aRecord->setAdditionalRecord();
         break;
     }
 }
 
-InstanceLabel::InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
+InstanceLabel::InstanceLabel(std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord, std::shared_ptr<Record> nsecRecord, std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->srvRecord = srvRecord;
@@ -308,7 +310,7 @@ MetaLabel::MetaLabel(std::string name, Label* nextLabel)
 }
 
 void
-MetaLabel::addService(Record* ptrRecord)
+MetaLabel::addService(std::shared_ptr<Record> ptrRecord)
 {
     records.push_back(ptrRecord);
 }
@@ -319,8 +321,8 @@ MetaLabel::matched(uint16_t type, uint16_t cls)
     switch (type) {
     case PTR_TYPE:
     case ANY_TYPE:
-        for (std::vector<Record*>::const_iterator i = this->records.begin(); i != this->records.end(); ++i) {
-            (*i)->setAnswerRecord();
+        for (auto& r : records) {
+            r->setAnswerRecord();
         }
         break;
     }

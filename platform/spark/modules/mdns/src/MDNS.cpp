@@ -1,5 +1,6 @@
 #include "MDNS.h"
 #include "spark_wiring_wifi.h"
+#include <memory>
 
 bool
 MDNS::setHostname(std::string hostname)
@@ -13,9 +14,9 @@ MDNS::setHostname(std::string hostname)
     }
 
     if (success && hostname.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(hostname)) {
-        aRecord = new ARecord();
+        aRecord = std::make_shared<ARecord>();
 
-        HostNSECRecord* hostNSECRecord = new HostNSECRecord();
+        auto hostNSECRecord = std::make_shared<HostNSECRecord>();
 
         records.push_back(aRecord);
         records.push_back(hostNSECRecord);
@@ -48,11 +49,11 @@ MDNS::addService(std::string protocol, std::string service, uint16_t port, std::
 
     if (success && protocol.length() < MAX_LABEL_SIZE - 1 && service.length() < MAX_LABEL_SIZE - 1 && instance.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(protocol) && isAlphaDigitHyphen(service) && isNetUnicode(instance)) {
 
-        PTRRecord* ptrRecord = new PTRRecord();
-        SRVRecord* srvRecord = new SRVRecord();
-        txtRecord = new TXTRecord();
-        InstanceNSECRecord* instanceNSECRecord = new InstanceNSECRecord();
-        PTRRecord* enumerationRecord = new PTRRecord(true);
+        auto ptrRecord = std::make_shared<PTRRecord>();
+        auto srvRecord = std::make_shared<SRVRecord>();
+        auto txtRecord = std::make_shared<TXTRecord>();
+        auto instanceNSECRecord = std::make_shared<InstanceNSECRecord>();
+        auto enumerationRecord = std::make_shared<PTRRecord>();
 
         records.push_back(ptrRecord);
         records.push_back(srvRecord);
@@ -75,15 +76,15 @@ MDNS::addService(std::string protocol, std::string service, uint16_t port, std::
         labels[instanceString] = new InstanceLabel(srvRecord, txtRecord, instanceNSECRecord, aRecord, instance, labels[serviceString], true);
         META->addService(enumerationRecord);
 
-        for (std::vector<std::string>::const_iterator i = subServices.begin(); i != subServices.end(); ++i) {
-            std::string subServiceString = "_" + *i + "._sub." + serviceString;
+        for (auto const& s : subServices) {
+            std::string subServiceString = "_" + s + "._sub." + serviceString;
 
             if (labels[subServiceString] == nullptr) {
-                labels[subServiceString] = new ServiceLabel(aRecord, "_" + *i, new Label("_sub", labels[serviceString]));
+                labels[subServiceString] = new ServiceLabel(aRecord, "_" + s, new Label("_sub", labels[serviceString]));
             }
 
-            PTRRecord* subPTRRecord = new PTRRecord();
-            PTRRecord* enumerationSubPTRRecord = new PTRRecord(true);
+            auto subPTRRecord = std::make_shared<PTRRecord>();
+            auto enumerationSubPTRRecord = std::make_shared<PTRRecord>();
 
             subPTRRecord->setLabel(labels[subServiceString]);
             subPTRRecord->setTargetLabel(labels[instanceString]);
@@ -135,8 +136,8 @@ MDNS::begin(bool announce)
     // TODO: Probing
 
     if (announce) {
-        for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
-            (*i)->announceRecord();
+        for (auto& r : records) {
+            r->announceRecord();
         }
 
         writeResponses();
@@ -215,11 +216,11 @@ MDNS::writeResponses()
     uint8_t answerCount = 0;
     uint8_t additionalCount = 0;
 
-    for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
-        if ((*i)->isAnswerRecord()) {
+    for (auto& r : records) {
+        if (r->isAnswerRecord()) {
             answerCount++;
         }
-        if ((*i)->isAdditionalRecord()) {
+        if (r->isAdditionalRecord()) {
             additionalCount++;
         }
     }
@@ -232,15 +233,15 @@ MDNS::writeResponses()
         buffer.writeUInt16(0x0);
         buffer.writeUInt16(additionalCount);
 
-        for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
-            if ((*i)->isAnswerRecord()) {
-                (*i)->write(buffer);
+        for (auto& r : records) {
+            if (r->isAnswerRecord()) {
+                r->write(buffer);
             }
         }
 
-        for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
-            if ((*i)->isAdditionalRecord()) {
-                (*i)->write(buffer);
+        for (auto& r : records) {
+            if (r->isAdditionalRecord()) {
+                r->write(buffer);
             }
         }
     }
@@ -253,12 +254,12 @@ MDNS::writeResponses()
         udp.endPacket();
     }
 
-    for (std::map<std::string, Label*>::const_iterator i = labels.begin(); i != labels.end(); ++i) {
-        i->second->reset();
+    for (auto& l : labels) {
+        l.second->reset();
     }
 
-    for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
-        (*i)->reset();
+    for (auto& r : records) {
+        r->reset();
     }
 }
 

@@ -4,6 +4,7 @@
 #include "Buffer.h"
 #include "Record.h"
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -82,43 +83,43 @@ private:
 class HostLabel : public Label {
 
 public:
-    HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    HostLabel(std::shared_ptr<Record> aRecord, std::shared_ptr<Record> nsecRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
 private:
-    Record* aRecord;
-    Record* nsecRecord;
+    std::shared_ptr<Record> aRecord;
+    std::shared_ptr<Record> nsecRecord;
 };
 
 class ServiceLabel : public Label {
 
 public:
-    ServiceLabel(Record* aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    ServiceLabel(std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
-    void addInstance(Record* ptrRecord, Record* srvRecord, Record* txtRecord);
+    void addInstance(std::shared_ptr<Record> ptrRecord, std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
 private:
-    Record* aRecord;
-    std::vector<Record*> ptrRecords;
-    std::vector<Record*> srvRecords;
-    std::vector<Record*> txtRecords;
+    std::shared_ptr<Record> aRecord;
+    std::vector<std::shared_ptr<Record>> ptrRecords;
+    std::vector<std::shared_ptr<Record>> srvRecords;
+    std::vector<std::shared_ptr<Record>> txtRecords;
 };
 
 class InstanceLabel : public Label {
 
 public:
-    InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    InstanceLabel(std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord, std::shared_ptr<Record> nsecRecord, std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
 private:
-    Record* srvRecord;
-    Record* txtRecord;
-    Record* nsecRecord;
-    Record* aRecord;
+    std::shared_ptr<Record> srvRecord;
+    std::shared_ptr<Record> txtRecord;
+    std::shared_ptr<Record> nsecRecord;
+    std::shared_ptr<Record> aRecord;
 };
 
 class MetaLabel : public Label {
@@ -126,12 +127,12 @@ class MetaLabel : public Label {
 public:
     MetaLabel(std::string name, Label* nextLabel);
 
-    void addService(Record* ptrRecord);
+    void addService(std::shared_ptr<Record> ptrRecord);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
 private:
-    std::vector<Record*> records;
+    std::vector<std::shared_ptr<Record>> records;
 };
 
 #endif

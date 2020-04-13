@@ -6,6 +6,7 @@
 #include "Record.h"
 #include "spark_wiring_udp.h"
 #include <map>
+#include <memory>
 #include <vector>
 
 #define MDNS_ADDRESS IPAddress(224, 0, 0, 251)
@@ -50,11 +51,11 @@ private:
     MetaLabel* META = new MetaLabel("_services", new Label("_dns-sd", new Label("_udp", LOCAL)));
     Label::Matcher* matcher = new Label::Matcher();
 
-    ARecord* aRecord;
-    TXTRecord* txtRecord;
+    std::shared_ptr<ARecord> aRecord;
+    std::shared_ptr<TXTRecord> txtRecord;
 
     std::map<std::string, Label*> labels;
-    std::vector<Record*> records;
+    std::vector<std::shared_ptr<Record>> records;
     std::string status = "Ok";
 
     QueryHeader readHeader(Buffer& buffer);
