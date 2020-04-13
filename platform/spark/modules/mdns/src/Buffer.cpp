@@ -43,10 +43,10 @@ Buffer::getOffset()
 }
 
 void
-Buffer::read(UDP* udp)
+Buffer::read(UDP& udp)
 {
     offset = 0;
-    limit = udp->read(data, size);
+    limit = udp.read(data, size);
 }
 
 uint8_t
@@ -86,9 +86,9 @@ Buffer::writeUInt32(uint32_t value)
 }
 
 void
-Buffer::write(UDP* udp)
+Buffer::write(UDP& udp)
 {
-    udp->write(data, offset);
+    udp.write(data, offset);
 
     offset = 0;
 }

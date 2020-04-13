@@ -129,8 +129,8 @@ MDNS::begin(bool announce)
         return false;
     }
 
-    udp->begin(MDNS_PORT);
-    udp->joinMulticast(MDNS_ADDRESS);
+    udp.begin(MDNS_PORT);
+    udp.joinMulticast(MDNS_ADDRESS);
 
     // TODO: Probing
 
@@ -148,12 +148,12 @@ MDNS::begin(bool announce)
 bool
 MDNS::processQueries()
 {
-    uint16_t n = udp->parsePacket();
+    uint16_t n = udp.parsePacket();
 
     if (n > 0) {
         buffer.read(udp);
 
-        udp->flush();
+        udp.flush();
 
         getResponses();
 
@@ -246,11 +246,11 @@ MDNS::writeResponses()
     }
 
     if (buffer.available() > 0) {
-        udp->beginPacket(MDNS_ADDRESS, MDNS_PORT);
+        udp.beginPacket(MDNS_ADDRESS, MDNS_PORT);
 
         buffer.write(udp);
 
-        udp->endPacket();
+        udp.endPacket();
     }
 
     for (std::map<std::string, Label*>::const_iterator i = labels.begin(); i != labels.end(); ++i) {

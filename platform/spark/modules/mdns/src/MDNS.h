@@ -42,7 +42,7 @@ private:
         uint16_t arcount;
     };
 
-    UDP* udp = new UDP();
+    UDP udp;
     Buffer buffer;
 
     Label* ROOT = new Label("");
