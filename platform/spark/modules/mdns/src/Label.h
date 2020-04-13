@@ -24,14 +24,14 @@ private:
 public:
     class Matcher {
     public:
-        Label* match(std::map<std::string, Label*> labels, Buffer* buffer);
+        Label* match(std::map<std::string, Label*> labels, Buffer& buffer);
     };
 
-    Label(std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
+    Label(std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     uint8_t getWriteSize();
 
-    void write(Buffer* buffer);
+    void write(Buffer& buffer);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -40,7 +40,7 @@ public:
 private:
     class Reader {
     public:
-        Reader(Buffer* buffer);
+        Reader(Buffer& buffer);
 
         bool hasNext();
 
@@ -49,7 +49,7 @@ private:
         bool endOfName();
 
     private:
-        Buffer* buffer;
+        Buffer& buffer;
         uint8_t c = 1;
     };
 
@@ -82,7 +82,7 @@ private:
 class HostLabel : public Label {
 
 public:
-    HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
+    HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -94,7 +94,7 @@ private:
 class ServiceLabel : public Label {
 
 public:
-    ServiceLabel(Record* aRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
+    ServiceLabel(Record* aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     void addInstance(Record* ptrRecord, Record* srvRecord, Record* txtRecord);
 
@@ -110,7 +110,7 @@ private:
 class InstanceLabel : public Label {
 
 public:
-    InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
+    InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 

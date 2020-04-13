@@ -56,12 +56,12 @@ Record::setKnownRecord()
 }
 
 void
-Record::write(Buffer* buffer)
+Record::write(Buffer& buffer)
 {
     label->write(buffer);
-    buffer->writeUInt16(type);
-    buffer->writeUInt16(cls);
-    buffer->writeUInt32(ttl);
+    buffer.writeUInt16(type);
+    buffer.writeUInt16(cls);
+    buffer.writeUInt32(ttl);
     writeSpecific(buffer);
 }
 
@@ -85,12 +85,12 @@ ARecord::ARecord()
 }
 
 void
-ARecord::writeSpecific(Buffer* buffer)
+ARecord::writeSpecific(Buffer& buffer)
 {
-    buffer->writeUInt16(4);
+    buffer.writeUInt16(4);
     IPAddress ip = spark::WiFi.localIP();
     for (int i = 0; i < IP_SIZE; i++) {
-        buffer->writeUInt8(ip[i]);
+        buffer.writeUInt8(ip[i]);
     }
 }
 
@@ -105,13 +105,13 @@ HostNSECRecord::HostNSECRecord()
 }
 
 void
-HostNSECRecord::writeSpecific(Buffer* buffer)
+HostNSECRecord::writeSpecific(Buffer& buffer)
 {
-    buffer->writeUInt16(5);
+    buffer.writeUInt16(5);
     getLabel()->write(buffer);
-    buffer->writeUInt8(0);
-    buffer->writeUInt8(1);
-    buffer->writeUInt8(0x40);
+    buffer.writeUInt8(0);
+    buffer.writeUInt8(1);
+    buffer.writeUInt8(0x40);
 }
 
 InstanceNSECRecord::InstanceNSECRecord()
@@ -120,17 +120,17 @@ InstanceNSECRecord::InstanceNSECRecord()
 }
 
 void
-InstanceNSECRecord::writeSpecific(Buffer* buffer)
+InstanceNSECRecord::writeSpecific(Buffer& buffer)
 {
-    buffer->writeUInt16(9);
+    buffer.writeUInt16(9);
     getLabel()->write(buffer);
-    buffer->writeUInt8(0);
-    buffer->writeUInt8(5);
-    buffer->writeUInt8(0);
-    buffer->writeUInt8(0);
-    buffer->writeUInt8(0x80);
-    buffer->writeUInt8(0);
-    buffer->writeUInt8(0x40);
+    buffer.writeUInt8(0);
+    buffer.writeUInt8(5);
+    buffer.writeUInt8(0);
+    buffer.writeUInt8(0);
+    buffer.writeUInt8(0x80);
+    buffer.writeUInt8(0);
+    buffer.writeUInt8(0x40);
 }
 
 PTRRecord::PTRRecord(bool meta)
@@ -139,9 +139,9 @@ PTRRecord::PTRRecord(bool meta)
 }
 
 void
-PTRRecord::writeSpecific(Buffer* buffer)
+PTRRecord::writeSpecific(Buffer& buffer)
 {
-    buffer->writeUInt16(targetLabel->getWriteSize());
+    buffer.writeUInt16(targetLabel->getWriteSize());
     targetLabel->write(buffer);
 }
 
@@ -157,12 +157,12 @@ SRVRecord::SRVRecord()
 }
 
 void
-SRVRecord::writeSpecific(Buffer* buffer)
+SRVRecord::writeSpecific(Buffer& buffer)
 {
-    buffer->writeUInt16(6 + hostLabel->getWriteSize());
-    buffer->writeUInt16(0);
-    buffer->writeUInt16(0);
-    buffer->writeUInt16(port);
+    buffer.writeUInt16(6 + hostLabel->getWriteSize());
+    buffer.writeUInt16(0);
+    buffer.writeUInt16(0);
+    buffer.writeUInt16(port);
     hostLabel->write(buffer);
 }
 
@@ -197,7 +197,7 @@ TXTRecord::addEntry(std::string key, std::string value)
 }
 
 void
-TXTRecord::writeSpecific(Buffer* buffer)
+TXTRecord::writeSpecific(Buffer& buffer)
 {
     uint16_t size = 0;
 
@@ -205,15 +205,15 @@ TXTRecord::writeSpecific(Buffer* buffer)
         size += s.size() + 1;
     }
 
-    buffer->writeUInt16(size);
+    buffer.writeUInt16(size);
 
     for (const auto& s : data) {
         uint8_t length = s.size();
 
-        buffer->writeUInt8(length);
+        buffer.writeUInt8(length);
 
         for (const auto& c : s) {
-            buffer->writeUInt8(reinterpret_cast<const uint8_t&>(c));
+            buffer.writeUInt8(reinterpret_cast<const uint8_t&>(c));
         }
     }
 }

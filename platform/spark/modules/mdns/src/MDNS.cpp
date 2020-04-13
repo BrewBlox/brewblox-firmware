@@ -20,7 +20,7 @@ MDNS::setHostname(std::string hostname)
         records.push_back(aRecord);
         records.push_back(hostNSECRecord);
 
-        Label* label = new HostLabel(aRecord, hostNSECRecord, hostname, LOCAL);
+        Label* label = new HostLabel(aRecord, hostNSECRecord, std::move(hostname), LOCAL);
 
         labels[HOSTNAME] = label;
         labels[META_SERVICE] = META;
@@ -64,7 +64,7 @@ MDNS::addService(std::string protocol, std::string service, uint16_t port, std::
 
         Label* protocolLabel = new Label("_" + protocol, LOCAL);
 
-        if (labels[serviceString] == NULL) {
+        if (labels[serviceString] == nullptr) {
             labels[serviceString] = new ServiceLabel(aRecord, "_" + service, protocolLabel);
         }
 
@@ -78,7 +78,7 @@ MDNS::addService(std::string protocol, std::string service, uint16_t port, std::
         for (std::vector<std::string>::const_iterator i = subServices.begin(); i != subServices.end(); ++i) {
             std::string subServiceString = "_" + *i + "._sub." + serviceString;
 
-            if (labels[subServiceString] == NULL) {
+            if (labels[subServiceString] == nullptr) {
                 labels[subServiceString] = new ServiceLabel(aRecord, "_" + *i, new Label("_sub", labels[serviceString]));
             }
 
@@ -151,13 +151,13 @@ MDNS::processQueries()
     uint16_t n = udp->parsePacket();
 
     if (n > 0) {
-        buffer->read(udp);
+        buffer.read(udp);
 
         udp->flush();
 
         getResponses();
 
-        buffer->clear();
+        buffer.clear();
 
         writeResponses();
     }
@@ -173,36 +173,36 @@ MDNS::getResponses()
     if ((header.flags & 0x8000) == 0 && header.qdcount > 0) {
         uint8_t count = 0;
 
-        while (count++ < header.qdcount && buffer->available() > 0) {
+        while (count++ < header.qdcount && buffer.available() > 0) {
             Label* label = matcher->match(labels, buffer);
 
-            if (buffer->available() >= 4) {
-                uint16_t type = buffer->readUInt16();
-                uint16_t cls = buffer->readUInt16();
+            if (buffer.available() >= 4) {
+                uint16_t type = buffer.readUInt16();
+                uint16_t cls = buffer.readUInt16();
 
-                if (label != NULL) {
+                if (label != nullptr) {
 
                     label->matched(type, cls);
                 }
             } else {
-                status = "Buffer underflow at index " + buffer->getOffset();
+                status = "Buffer underflow at index " + buffer.getOffset();
             }
         }
     }
 }
 
 MDNS::QueryHeader
-MDNS::readHeader(Buffer* buffer)
+MDNS::readHeader(Buffer& buffer)
 {
     QueryHeader header;
 
-    if (buffer->available() >= 12) {
-        header.id = buffer->readUInt16();
-        header.flags = buffer->readUInt16();
-        header.qdcount = buffer->readUInt16();
-        header.ancount = buffer->readUInt16();
-        header.nscount = buffer->readUInt16();
-        header.arcount = buffer->readUInt16();
+    if (buffer.available() >= 12) {
+        header.id = buffer.readUInt16();
+        header.flags = buffer.readUInt16();
+        header.qdcount = buffer.readUInt16();
+        header.ancount = buffer.readUInt16();
+        header.nscount = buffer.readUInt16();
+        header.arcount = buffer.readUInt16();
     }
 
     return header;
@@ -225,12 +225,12 @@ MDNS::writeResponses()
     }
 
     if (answerCount > 0) {
-        buffer->writeUInt16(0x0);
-        buffer->writeUInt16(0x8400);
-        buffer->writeUInt16(0x0);
-        buffer->writeUInt16(answerCount);
-        buffer->writeUInt16(0x0);
-        buffer->writeUInt16(additionalCount);
+        buffer.writeUInt16(0x0);
+        buffer.writeUInt16(0x8400);
+        buffer.writeUInt16(0x0);
+        buffer.writeUInt16(answerCount);
+        buffer.writeUInt16(0x0);
+        buffer.writeUInt16(additionalCount);
 
         for (std::vector<Record*>::const_iterator i = records.begin(); i != records.end(); ++i) {
             if ((*i)->isAnswerRecord()) {
@@ -245,10 +245,10 @@ MDNS::writeResponses()
         }
     }
 
-    if (buffer->available() > 0) {
+    if (buffer.available() > 0) {
         udp->beginPacket(MDNS_ADDRESS, MDNS_PORT);
 
-        buffer->write(udp);
+        buffer.write(udp);
 
         udp->endPacket();
     }

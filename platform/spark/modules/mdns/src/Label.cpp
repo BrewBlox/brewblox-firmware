@@ -28,21 +28,21 @@ Label::getWriteSize()
 }
 
 void
-Label::write(Buffer* buffer)
+Label::write(Buffer& buffer)
 {
     Label* label = this;
 
     while (label) {
         if (label->writeOffset == INVALID_OFFSET) {
-            label->writeOffset = buffer->getOffset();
+            label->writeOffset = buffer.getOffset();
 
-            buffer->writeUInt8(label->data.size());
+            buffer.writeUInt8(label->data.size());
             for (const auto& c : label->data) {
-                buffer->writeUInt8(reinterpret_cast<const uint8_t&>(c));
+                buffer.writeUInt8(reinterpret_cast<const uint8_t&>(c));
             }
             label = label->nextLabel;
         } else {
-            buffer->writeUInt16((LABEL_POINTER << 8) | label->writeOffset);
+            buffer.writeUInt16((LABEL_POINTER << 8) | label->writeOffset);
             label = nullptr;
         }
     }
@@ -53,40 +53,40 @@ Label::reset()
 {
     Label* label = this;
 
-    while (label != NULL) {
+    while (label != nullptr) {
         label->writeOffset = INVALID_OFFSET;
 
         label = label->nextLabel;
     }
 }
 
-Label::Reader::Reader(Buffer* buffer)
+Label::Reader::Reader(Buffer& buffer_)
+    : buffer(buffer_)
 {
-    this->buffer = buffer;
 }
 
 bool
 Label::Reader::hasNext()
 {
-    return c != END_OF_NAME && buffer->available() > 0;
+    return c != END_OF_NAME && buffer.available() > 0;
 }
 
 uint8_t
 Label::Reader::next()
 {
-    c = buffer->readUInt8();
+    c = buffer.readUInt8();
 
     while ((c & LABEL_POINTER) == LABEL_POINTER) {
-        if (buffer->available() > 0) {
-            uint8_t c2 = buffer->readUInt8();
+        if (buffer.available() > 0) {
+            uint8_t c2 = buffer.readUInt8();
 
             uint16_t pointerOffset = ((c & ~LABEL_POINTER) << 8) | c2;
 
-            buffer->mark();
+            buffer.mark();
 
-            buffer->setOffset(pointerOffset);
+            buffer.setOffset(pointerOffset);
 
-            c = buffer->readUInt8();
+            c = buffer.readUInt8();
         }
     }
 
@@ -143,7 +143,7 @@ Label::Iterator::getStartLabel()
 }
 
 Label*
-Label::Matcher::match(std::map<std::string, Label*> labels, Buffer* buffer)
+Label::Matcher::match(std::map<std::string, Label*> labels, Buffer& buffer)
 {
     Iterator* iterators[labels.size()];
 
@@ -176,14 +176,14 @@ Label::Matcher::match(std::map<std::string, Label*> labels, Buffer* buffer)
         }
     }
 
-    buffer->reset();
+    buffer.reset();
 
-    Label* label = NULL;
+    Label* label = nullptr;
 
     if (reader->endOfName()) {
         uint8_t idx = 0;
 
-        while (label == NULL && idx < labels.size()) {
+        while (label == nullptr && idx < labels.size()) {
             if (iterators[idx]->matched()) {
                 label = iterators[idx]->getStartLabel();
             }
@@ -207,7 +207,7 @@ Label::matched(uint16_t type, uint16_t cls)
 }
 
 HostLabel::HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
-    : Label(name, nextLabel, caseSensitive)
+    : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
     this->nsecRecord = nsecRecord;
@@ -229,7 +229,7 @@ HostLabel::matched(uint16_t type, uint16_t cls)
 }
 
 ServiceLabel::ServiceLabel(Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
-    : Label(name, nextLabel, caseSensitive)
+    : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
 }
@@ -263,7 +263,7 @@ ServiceLabel::matched(uint16_t type, uint16_t cls)
 }
 
 InstanceLabel::InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
-    : Label(name, nextLabel, caseSensitive)
+    : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->srvRecord = srvRecord;
     this->txtRecord = txtRecord;
@@ -302,7 +302,7 @@ InstanceLabel::matched(uint16_t type, uint16_t cls)
 }
 
 MetaLabel::MetaLabel(std::string name, Label* nextLabel)
-    : Label(name, nextLabel)
+    : Label(std::move(name), nextLabel)
 {
     // Do nothing
 }

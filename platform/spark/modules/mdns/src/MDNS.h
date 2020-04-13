@@ -17,6 +17,11 @@
 
 class MDNS {
 public:
+    MDNS()
+        : buffer(BUFFER_SIZE)
+    {
+    }
+
     bool setHostname(std::string hostname);
 
     bool addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices = {});
@@ -38,7 +43,7 @@ private:
     };
 
     UDP* udp = new UDP();
-    Buffer* buffer = new Buffer(BUFFER_SIZE);
+    Buffer buffer;
 
     Label* ROOT = new Label("");
     Label* LOCAL = new Label("local", ROOT);
@@ -52,7 +57,7 @@ private:
     std::vector<Record*> records;
     std::string status = "Ok";
 
-    QueryHeader readHeader(Buffer* buffer);
+    QueryHeader readHeader(Buffer& buffer);
     void getResponses();
     void writeResponses();
     bool isAlphaDigitHyphen(std::string string);

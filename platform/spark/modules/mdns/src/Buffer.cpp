@@ -4,7 +4,7 @@
 Buffer::Buffer(uint16_t size)
 {
     this->data = (uint8_t*)malloc(size);
-    this->size = data != NULL ? size : 0;
+    this->size = data != nullptr ? size : 0;
 }
 
 uint16_t

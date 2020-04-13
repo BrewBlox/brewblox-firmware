@@ -40,7 +40,7 @@ public:
 
     void setKnownRecord();
 
-    void write(Buffer* buffer);
+    void write(Buffer& buffer);
 
     void reset();
 
@@ -49,7 +49,7 @@ protected:
 
     Label* getLabel();
 
-    virtual void writeSpecific(Buffer* buffer) = 0;
+    virtual void writeSpecific(Buffer& buffer) = 0;
 
 private:
     Label* label;
@@ -67,7 +67,7 @@ class ARecord : public Record {
 public:
     ARecord();
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 };
 
 class NSECRecord : public Record {
@@ -75,7 +75,7 @@ class NSECRecord : public Record {
 public:
     NSECRecord();
 
-    virtual void writeSpecific(Buffer* buffer) = 0;
+    virtual void writeSpecific(Buffer& buffer) = 0;
 };
 
 class HostNSECRecord : public NSECRecord {
@@ -83,7 +83,7 @@ class HostNSECRecord : public NSECRecord {
 public:
     HostNSECRecord();
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 };
 
 class InstanceNSECRecord : public NSECRecord {
@@ -91,7 +91,7 @@ class InstanceNSECRecord : public NSECRecord {
 public:
     InstanceNSECRecord();
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 };
 
 class PTRRecord : public Record {
@@ -99,7 +99,7 @@ class PTRRecord : public Record {
 public:
     PTRRecord(bool meta = false);
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 
     void setTargetLabel(Label* label);
 
@@ -112,7 +112,7 @@ class SRVRecord : public Record {
 public:
     SRVRecord();
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 
     void setHostLabel(Label* label);
 
@@ -128,7 +128,7 @@ class TXTRecord : public Record {
 public:
     TXTRecord();
 
-    virtual void writeSpecific(Buffer* buffer);
+    virtual void writeSpecific(Buffer& buffer);
 
     void addEntry(std::string key, std::string value = "");
 
