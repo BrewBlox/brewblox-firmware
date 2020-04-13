@@ -1,27 +1,11 @@
 #include "Label.h"
 #include "stdlib.h"
 
-Label::Label(std::string name, Label* nextLabel, bool caseSensitive)
+Label::Label(std::string name_, Label* nextLabel_, bool caseSensitive_)
+    : data(std::move(name_))
+    , caseSensitive(caseSensitive_)
+    , nextLabel(nextLabel_)
 {
-    data = (uint8_t*)malloc(name.size() + 1);
-    auto ptr = data;
-    if (ptr) {
-        *(ptr++) = name.size();
-        for (const auto& c : name) {
-            *(ptr++) = reinterpret_cast<const uint8_t&>(c);
-        }
-    } else {
-        data = EMPTY_DATA;
-    }
-
-    this->nextLabel = nextLabel;
-    this->caseSensitive = caseSensitive;
-}
-
-uint8_t
-Label::getSize()
-{
-    return data[0];
 }
 
 uint8_t
@@ -30,13 +14,13 @@ Label::getWriteSize()
     Label* label = this;
     uint8_t size = 0;
 
-    while (label != NULL) {
-        if (label->writeOffset == INVALID_OFFSET) {
-            size += label->data[0] + 1;
+    while (label != nullptr) {
+        if (label->writeOffset == INVALID_OFFSET) { // new label, write full name
+            size += label->data.size() + 1;
             label = label->nextLabel;
-        } else {
+        } else { // pointer to previously written location can be used
             size += 2;
-            label = NULL;
+            label = nullptr;
         }
     }
 
@@ -52,16 +36,14 @@ Label::write(Buffer* buffer)
         if (label->writeOffset == INVALID_OFFSET) {
             label->writeOffset = buffer->getOffset();
 
-            uint8_t size = label->data[0] + 1;
-
-            for (uint8_t i = 0; i < size; i++) {
-                buffer->writeUInt8(label->data[i]);
+            buffer->writeUInt8(label->data.size());
+            for (const auto& c : label->data) {
+                buffer->writeUInt8(reinterpret_cast<const uint8_t&>(c));
             }
-
             label = label->nextLabel;
         } else {
             buffer->writeUInt16((LABEL_POINTER << 8) | label->writeOffset);
-            label = NULL;
+            label = nullptr;
         }
     }
 }
@@ -121,7 +103,7 @@ Label::Iterator::Iterator(Label* label)
 {
     this->label = label;
     this->startLabel = label;
-    this->size = label->data[0];
+    this->size = label->data.size();
 }
 
 bool
@@ -130,7 +112,7 @@ Label::Iterator::match(uint8_t c)
     if (matches) {
         while (offset > size && label) {
             label = label->nextLabel;
-            size = label->data[0];
+            size = label->data.size();
             offset = 0;
         }
 
@@ -163,11 +145,9 @@ Label::Iterator::getStartLabel()
 Label*
 Label::Matcher::match(std::map<std::string, Label*> labels, Buffer* buffer)
 {
-
     Iterator* iterators[labels.size()];
 
     std::map<std::string, Label*>::const_iterator i;
-
     uint8_t idx = 0;
 
     for (i = labels.begin(); i != labels.end(); ++i) {

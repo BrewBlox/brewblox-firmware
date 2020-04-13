@@ -29,8 +29,6 @@ public:
 
     Label(std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
 
-    uint8_t getSize();
-
     uint8_t getWriteSize();
 
     void write(Buffer* buffer);
@@ -75,8 +73,7 @@ private:
         bool equalsIgnoreCase(uint8_t c);
     };
 
-    uint8_t* EMPTY_DATA = {END_OF_NAME};
-    uint8_t* data;
+    std::string data;
     bool caseSensitive;
     Label* nextLabel;
     int16_t writeOffset = INVALID_OFFSET;
