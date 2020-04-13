@@ -2,7 +2,6 @@
 #define _INCL_RECORD
 
 #include "Buffer.h"
-#include "spark_wiring_string.h"
 #include <vector>
 
 #define IN_CLASS 1
@@ -131,10 +130,10 @@ public:
 
     virtual void writeSpecific(Buffer* buffer);
 
-    void addEntry(String key, String value = "");
+    void addEntry(std::string key, std::string value = "");
 
 private:
-    std::vector<String> data;
+    std::vector<std::string> data;
 };
 
 #endif

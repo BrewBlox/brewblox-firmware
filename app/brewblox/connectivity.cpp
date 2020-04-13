@@ -102,6 +102,36 @@ d2h(uint8_t bin)
     return uint8_t(bin + (bin > 9 ? 'A' - 10 : '0'));
 }
 
+auto
+deviceIdStringInit()
+{
+    std::string hex(24, '0');
+    uint8_t id[12];
+    HAL_device_ID(id, 12);
+
+    uint8_t* pId = id;
+    auto hId = hex.begin();
+    while (hId < hex.end()) {
+        *hId++ = d2h(uint8_t(*pId & 0xF0) >> 4);
+        *hId++ = d2h(uint8_t(*pId++ & 0xF));
+    }
+    return hex;
+}
+
+auto
+deviceIdString()
+{
+    static auto hexId = deviceIdStringInit();
+    return hexId;
+}
+
+auto
+deviceIdUint8Ptr()
+{
+    static auto hexId = deviceIdString().c_str();
+    return reinterpret_cast<const uint8_t*>(hexId);
+}
+
 void
 manageConnections(uint32_t now)
 {
@@ -131,22 +161,11 @@ manageConnections(uint32_t now)
                                         "Please install a BrewBlox server to connect to it using the BrewBlox protocol.</p>"
                                         "<p>Device ID = ";
 
-                uint8_t id[12];
-                uint8_t hex[24];
-                HAL_device_ID(id, 12);
-
                 uint8_t end[] = "</p></body></html>\n\n";
-
-                uint8_t* pId = id;
-                uint8_t* hId = hex;
-                while (hId < hex + 24) {
-                    *hId++ = d2h(uint8_t(*pId & 0xF0) >> 4);
-                    *hId++ = d2h(uint8_t(*pId++ & 0xF));
-                }
 
                 client.write(start, sizeof(start), 0);
                 if (!client.getWriteError()) {
-                    client.write(hex, sizeof(hex), 0);
+                    client.write(deviceIdUint8Ptr(), 24, 0);
                 }
                 if (!client.getWriteError()) {
                     client.write(end, sizeof(end), 0);
@@ -177,11 +196,11 @@ manageConnections(uint32_t now)
 void
 initMdns()
 {
-    bool success = mdns.setHostname(System.deviceID());
-    success = success && mdns.addService("tcp", "http", 80, System.deviceID());
-    success = success && mdns.addService("tcp", "brewblox", 8332, System.deviceID());
+    bool success = mdns.setHostname(deviceIdString());
+    success = success && mdns.addService("tcp", "http", 80, deviceIdString());
+    success = success && mdns.addService("tcp", "brewblox", 8332, deviceIdString());
     if (success) {
-        auto hw = String("Spark ");
+        auto hw = std::string("Spark ");
         switch (getSparkVersion()) {
         case SparkVersion::V1:
             hw += "1";
@@ -194,7 +213,7 @@ initMdns()
             break;
         }
         mdns.addTXTEntry("VERSION", stringify(GIT_VERSION));
-        mdns.addTXTEntry("ID", System.deviceID());
+        mdns.addTXTEntry("ID", deviceIdString());
         mdns.addTXTEntry("PLATFORM", stringify(PLATFORM_ID));
         mdns.addTXTEntry("HW", hw);
     }

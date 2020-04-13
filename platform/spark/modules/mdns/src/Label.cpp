@@ -1,14 +1,14 @@
 #include "Label.h"
 #include "stdlib.h"
 
-Label::Label(String name, Label* nextLabel, bool caseSensitive)
+Label::Label(std::string name, Label* nextLabel, bool caseSensitive)
 {
-    data = (uint8_t*)malloc(name.length() + 1);
-
-    if (data) {
-        data[0] = name.length();
-        for (uint8_t i = 0; i < name.length(); i++) {
-            data[i + 1] = name.charAt(i);
+    data = (uint8_t*)malloc(name.size() + 1);
+    auto ptr = data;
+    if (ptr) {
+        *(ptr++) = name.size();
+        for (const auto& c : name) {
+            *(ptr++) = reinterpret_cast<const uint8_t&>(c);
         }
     } else {
         data = EMPTY_DATA;
@@ -161,12 +161,12 @@ Label::Iterator::getStartLabel()
 }
 
 Label*
-Label::Matcher::match(std::map<String, Label*> labels, Buffer* buffer)
+Label::Matcher::match(std::map<std::string, Label*> labels, Buffer* buffer)
 {
 
     Iterator* iterators[labels.size()];
 
-    std::map<String, Label*>::const_iterator i;
+    std::map<std::string, Label*>::const_iterator i;
 
     uint8_t idx = 0;
 
@@ -226,7 +226,7 @@ Label::matched(uint16_t type, uint16_t cls)
 {
 }
 
-HostLabel::HostLabel(Record* aRecord, Record* nsecRecord, String name, Label* nextLabel, bool caseSensitive)
+HostLabel::HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(name, nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
@@ -248,7 +248,7 @@ HostLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-ServiceLabel::ServiceLabel(Record* aRecord, String name, Label* nextLabel, bool caseSensitive)
+ServiceLabel::ServiceLabel(Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(name, nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
@@ -282,7 +282,7 @@ ServiceLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-InstanceLabel::InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, String name, Label* nextLabel, bool caseSensitive)
+InstanceLabel::InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(name, nextLabel, caseSensitive)
 {
     this->srvRecord = srvRecord;
@@ -321,7 +321,7 @@ InstanceLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-MetaLabel::MetaLabel(String name, Label* nextLabel)
+MetaLabel::MetaLabel(std::string name, Label* nextLabel)
     : Label(name, nextLabel)
 {
     // Do nothing

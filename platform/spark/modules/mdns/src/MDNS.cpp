@@ -2,10 +2,10 @@
 #include "spark_wiring_wifi.h"
 
 bool
-MDNS::setHostname(String hostname)
+MDNS::setHostname(std::string hostname)
 {
     bool success = true;
-    String status = "Ok";
+    std::string status = "Ok";
 
     if (labels[HOSTNAME]) {
         status = "Hostname already set";
@@ -36,10 +36,10 @@ MDNS::setHostname(String hostname)
 }
 
 bool
-MDNS::addService(String protocol, String service, uint16_t port, String instance, std::vector<String> subServices)
+MDNS::addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices)
 {
     bool success = true;
-    String status = "Ok";
+    std::string status = "Ok";
 
     if (!labels[HOSTNAME]) {
         status = "Hostname not set";
@@ -60,7 +60,7 @@ MDNS::addService(String protocol, String service, uint16_t port, String instance
         records.push_back(instanceNSECRecord);
         records.push_back(enumerationRecord);
 
-        String serviceString = "_" + service + "._" + protocol;
+        std::string serviceString = "_" + service + "._" + protocol;
 
         Label* protocolLabel = new Label("_" + protocol, LOCAL);
 
@@ -70,13 +70,13 @@ MDNS::addService(String protocol, String service, uint16_t port, String instance
 
         ((ServiceLabel*)labels[serviceString])->addInstance(ptrRecord, srvRecord, txtRecord);
 
-        String instanceString = instance + "._" + service + "._" + protocol;
+        std::string instanceString = instance + "._" + service + "._" + protocol;
 
         labels[instanceString] = new InstanceLabel(srvRecord, txtRecord, instanceNSECRecord, aRecord, instance, labels[serviceString], true);
         META->addService(enumerationRecord);
 
-        for (std::vector<String>::const_iterator i = subServices.begin(); i != subServices.end(); ++i) {
-            String subServiceString = "_" + *i + "._sub." + serviceString;
+        for (std::vector<std::string>::const_iterator i = subServices.begin(); i != subServices.end(); ++i) {
+            std::string subServiceString = "_" + *i + "._sub." + serviceString;
 
             if (labels[subServiceString] == NULL) {
                 labels[subServiceString] = new ServiceLabel(aRecord, "_" + *i, new Label("_sub", labels[serviceString]));
@@ -116,7 +116,7 @@ MDNS::addService(String protocol, String service, uint16_t port, String instance
 }
 
 void
-MDNS::addTXTEntry(String key, String value)
+MDNS::addTXTEntry(std::string key, std::string value)
 {
     txtRecord->addEntry(key, value);
 }
@@ -253,7 +253,7 @@ MDNS::writeResponses()
         udp->endPacket();
     }
 
-    for (std::map<String, Label*>::const_iterator i = labels.begin(); i != labels.end(); ++i) {
+    for (std::map<std::string, Label*>::const_iterator i = labels.begin(); i != labels.end(); ++i) {
         i->second->reset();
     }
 
@@ -263,33 +263,24 @@ MDNS::writeResponses()
 }
 
 bool
-MDNS::isAlphaDigitHyphen(String string)
+MDNS::isAlphaDigitHyphen(std::string s)
 {
-    bool result = true;
-
-    uint8_t idx = 0;
-
-    while (result && idx < string.length()) {
-        uint8_t c = string.charAt(idx++);
-
-        result = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-';
+    for (const auto& c : s) {
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-')) {
+            return false;
+        }
     }
-
-    return result;
+    return true;
 }
 
 bool
-MDNS::isNetUnicode(String string)
+MDNS::isNetUnicode(std::string s)
 {
-    bool result = true;
-
-    uint8_t idx = 0;
-
-    while (result && idx < string.length()) {
-        uint8_t c = string.charAt(idx++);
-
-        result = c >= 0x1f && c != 0x7f;
+    for (const auto& c : s) {
+        if (!(c >= 0x1f && c != 0x7f)) {
+            return false;
+        }
     }
 
-    return result;
+    return true;
 }

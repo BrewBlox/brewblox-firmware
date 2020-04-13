@@ -184,11 +184,11 @@ TXTRecord::TXTRecord()
 }
 
 void
-TXTRecord::addEntry(String key, String value)
+TXTRecord::addEntry(std::string key, std::string value)
 {
-    String entry = key;
+    std::string entry = key;
 
-    if (value == NULL || value.length() > 0) {
+    if (!value.empty()) {
         entry += '=';
         entry += value;
     }
@@ -201,21 +201,19 @@ TXTRecord::writeSpecific(Buffer* buffer)
 {
     uint16_t size = 0;
 
-    std::vector<String>::const_iterator i;
-
-    for (i = data.begin(); i != data.end(); ++i) {
-        size += i->length() + 1;
+    for (const auto& s : data) {
+        size += s.size() + 1;
     }
 
     buffer->writeUInt16(size);
 
-    for (i = data.begin(); i != data.end(); ++i) {
-        uint8_t length = i->length();
+    for (const auto& s : data) {
+        uint8_t length = s.size();
 
         buffer->writeUInt8(length);
 
-        for (uint8_t idx = 0; idx < length; idx++) {
-            buffer->writeUInt8(i->charAt(idx));
+        for (const auto& c : s) {
+            buffer->writeUInt8(reinterpret_cast<const uint8_t&>(c));
         }
     }
 }

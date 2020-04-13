@@ -6,3 +6,4 @@ compile_commands.json
 
 .vscode/.cortex-debug.peripherals.state.json
 core
+build/coverage

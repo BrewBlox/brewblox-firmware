@@ -4,7 +4,6 @@
 #include "Buffer.h"
 #include "Label.h"
 #include "Record.h"
-#include "spark_wiring_string.h"
 #include "spark_wiring_udp.h"
 #include <map>
 #include <vector>
@@ -18,11 +17,11 @@
 
 class MDNS {
 public:
-    bool setHostname(String hostname);
+    bool setHostname(std::string hostname);
 
-    bool addService(String protocol, String service, uint16_t port, String instance, std::vector<String> subServices = std::vector<String>());
+    bool addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices = {});
 
-    void addTXTEntry(String key, String value = "");
+    void addTXTEntry(std::string key, std::string value = "");
 
     bool begin(bool announce = false);
 
@@ -49,15 +48,15 @@ private:
     ARecord* aRecord;
     TXTRecord* txtRecord;
 
-    std::map<String, Label*> labels;
+    std::map<std::string, Label*> labels;
     std::vector<Record*> records;
-    String status = "Ok";
+    std::string status = "Ok";
 
     QueryHeader readHeader(Buffer* buffer);
     void getResponses();
     void writeResponses();
-    bool isAlphaDigitHyphen(String string);
-    bool isNetUnicode(String string);
+    bool isAlphaDigitHyphen(std::string string);
+    bool isNetUnicode(std::string string);
 };
 
 #endif

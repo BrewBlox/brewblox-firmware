@@ -4,8 +4,8 @@
 #include "Buffer.h"
 #include "Record.h"
 #include <map>
+#include <string>
 #include <vector>
-#include "spark_wiring_string.h"
 
 #define DOT '.'
 
@@ -24,10 +24,10 @@ private:
 public:
     class Matcher {
     public:
-        Label* match(std::map<String, Label*> labels, Buffer* buffer);
+        Label* match(std::map<std::string, Label*> labels, Buffer* buffer);
     };
 
-    Label(String name, Label* nextLabel = NULL, bool caseSensitive = false);
+    Label(std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
 
     uint8_t getSize();
 
@@ -85,7 +85,7 @@ private:
 class HostLabel : public Label {
 
 public:
-    HostLabel(Record* aRecord, Record* nsecRecord, String name, Label* nextLabel = NULL, bool caseSensitive = false);
+    HostLabel(Record* aRecord, Record* nsecRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -97,7 +97,7 @@ private:
 class ServiceLabel : public Label {
 
 public:
-    ServiceLabel(Record* aRecord, String name, Label* nextLabel = NULL, bool caseSensitive = false);
+    ServiceLabel(Record* aRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
 
     void addInstance(Record* ptrRecord, Record* srvRecord, Record* txtRecord);
 
@@ -113,7 +113,7 @@ private:
 class InstanceLabel : public Label {
 
 public:
-    InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, String name, Label* nextLabel = NULL, bool caseSensitive = false);
+    InstanceLabel(Record* srvRecord, Record* txtRecord, Record* nsecRecord, Record* aRecord, std::string name, Label* nextLabel = NULL, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -127,7 +127,7 @@ private:
 class MetaLabel : public Label {
 
 public:
-    MetaLabel(String name, Label* nextLabel);
+    MetaLabel(std::string name, Label* nextLabel);
 
     void addService(Record* ptrRecord);
 

@@ -66,3 +66,4 @@ curl https://bashupload.com/eeprom.bin --data-binary @/home/pi/brewblox/eeprom.b
 
 On a test spark with a hardware debugger:
 st-flash write eeprom.bin 0x800c000
+flash modules and app again
