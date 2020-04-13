@@ -206,7 +206,7 @@ Label::matched(uint16_t type, uint16_t cls)
 {
 }
 
-HostLabel::HostLabel(std::shared_ptr<Record> aRecord, std::shared_ptr<Record> nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
+HostLabel::HostLabel(std::shared_ptr<ARecord> aRecord, std::shared_ptr<NSECRecord> nsecRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
@@ -228,14 +228,14 @@ HostLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-ServiceLabel::ServiceLabel(std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel, bool caseSensitive)
+ServiceLabel::ServiceLabel(std::shared_ptr<ARecord> aRecord, std::string name, Label* nextLabel, bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->aRecord = aRecord;
 }
 
 void
-ServiceLabel::addInstance(std::shared_ptr<Record> ptrRecord, std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord)
+ServiceLabel::addInstance(std::shared_ptr<PTRRecord> ptrRecord, std::shared_ptr<SRVRecord> srvRecord, std::shared_ptr<TXTRecord> txtRecord)
 {
     ptrRecords.push_back(ptrRecord);
     srvRecords.push_back(srvRecord);
@@ -264,7 +264,13 @@ ServiceLabel::matched(uint16_t type, uint16_t cls)
     }
 }
 
-InstanceLabel::InstanceLabel(std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord, std::shared_ptr<Record> nsecRecord, std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel, bool caseSensitive)
+InstanceLabel::InstanceLabel(std::shared_ptr<SRVRecord> srvRecord,
+                             std::shared_ptr<TXTRecord> txtRecord,
+                             std::shared_ptr<NSECRecord> nsecRecord,
+                             std::shared_ptr<ARecord> aRecord,
+                             std::string name,
+                             Label* nextLabel,
+                             bool caseSensitive)
     : Label(std::move(name), nextLabel, caseSensitive)
 {
     this->srvRecord = srvRecord;

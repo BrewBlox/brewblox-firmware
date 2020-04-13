@@ -83,7 +83,7 @@ private:
 class HostLabel : public Label {
 
 public:
-    HostLabel(std::shared_ptr<Record> aRecord, std::shared_ptr<Record> nsecRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    HostLabel(std::shared_ptr<ARecord> aRecord, std::shared_ptr<NSECRecord> nsecRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -95,9 +95,9 @@ private:
 class ServiceLabel : public Label {
 
 public:
-    ServiceLabel(std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    ServiceLabel(std::shared_ptr<ARecord> aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
 
-    void addInstance(std::shared_ptr<Record> ptrRecord, std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord);
+    void addInstance(std::shared_ptr<PTRRecord> ptrRecord, std::shared_ptr<SRVRecord> srvRecord, std::shared_ptr<TXTRecord> txtRecord);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
@@ -111,15 +111,21 @@ private:
 class InstanceLabel : public Label {
 
 public:
-    InstanceLabel(std::shared_ptr<Record> srvRecord, std::shared_ptr<Record> txtRecord, std::shared_ptr<Record> nsecRecord, std::shared_ptr<Record> aRecord, std::string name, Label* nextLabel = nullptr, bool caseSensitive = false);
+    InstanceLabel(std::shared_ptr<SRVRecord> srvRecord,
+                  std::shared_ptr<TXTRecord> txtRecord,
+                  std::shared_ptr<NSECRecord> nsecRecord,
+                  std::shared_ptr<ARecord> aRecord,
+                  std::string name,
+                  Label* nextLabel = nullptr,
+                  bool caseSensitive = false);
 
     virtual void matched(uint16_t type, uint16_t cls);
 
 private:
-    std::shared_ptr<Record> srvRecord;
-    std::shared_ptr<Record> txtRecord;
-    std::shared_ptr<Record> nsecRecord;
-    std::shared_ptr<Record> aRecord;
+    std::shared_ptr<SRVRecord> srvRecord;
+    std::shared_ptr<TXTRecord> txtRecord;
+    std::shared_ptr<NSECRecord> nsecRecord;
+    std::shared_ptr<ARecord> aRecord;
 };
 
 class MetaLabel : public Label {
