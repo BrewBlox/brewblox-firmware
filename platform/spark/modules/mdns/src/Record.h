@@ -1,9 +1,9 @@
-#ifndef _INCL_RECORD
-#define _INCL_RECORD
+#pragma once
 
 #include "Buffer.h"
+#include <memory>
+#include <string>
 #include <vector>
-
 #define IN_CLASS 1
 #define CACHE_FLUSH 0x8000
 
@@ -21,13 +21,35 @@
 
 #define IP_SIZE 4
 
-class Label;
+class Record;
+
+class Label {
+public:
+    Label(std::string _name)
+        : name(std::move(_name))
+    {
+    }
+    Label(std::string _name, std::shared_ptr<Record> _next)
+        : name(std::move(_name))
+        , next(std::move(_next))
+    {
+    }
+
+    void write(Buffer& buffer) const
+    {
+        buffer.writeUInt8(name.size());
+        for (const auto& c : name) {
+            buffer.writeUInt8(reinterpret_cast<const uint8_t&>(c));
+        }
+    }
+
+    std::string name;
+    std::shared_ptr<Record> next;
+};
 
 class Record {
 
 public:
-    void setLabel(Label* label);
-
     void announceRecord();
 
     void setAnswerRecord();
@@ -40,23 +62,23 @@ public:
 
     void setKnownRecord();
 
-    void write(Buffer& buffer);
+    void write(Buffer& buffer) const;
 
+    void writeLabel(Buffer& buffer) const;
+    const Label& getLabel() const;
     void reset();
 
 protected:
-    Record(uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
+    Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
 
-    Label* getLabel();
-
-    virtual void writeSpecific(Buffer& buffer) = 0;
+    virtual void writeSpecific(Buffer& buffer) const = 0;
 
 private:
-    Label* label;
-    uint16_t type;
-    uint16_t cls;
-    uint32_t ttl;
-    bool announce;
+    const Label label;
+    const uint16_t type;
+    const uint16_t cls;
+    const uint32_t ttl;
+    const bool announce;
     bool answerRecord = false;
     bool additionalRecord = false;
     bool knownRecord = false;
@@ -65,15 +87,15 @@ private:
 class ARecord : public Record {
 
 public:
-    ARecord();
+    ARecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer);
+    virtual void writeSpecific(Buffer& buffer) const;
 };
 
 class NSECRecord : public Record {
 
 public:
-    NSECRecord();
+    NSECRecord(Label label);
 
     virtual void writeSpecific(Buffer& buffer) = 0;
 };
@@ -81,59 +103,54 @@ public:
 class HostNSECRecord : public NSECRecord {
 
 public:
-    HostNSECRecord();
+    HostNSECRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer);
+    virtual void writeSpecific(Buffer& buffer) const;
 };
 
 class InstanceNSECRecord : public NSECRecord {
 
 public:
-    InstanceNSECRecord();
+    InstanceNSECRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer);
+    virtual void writeSpecific(Buffer& buffer) const;
 };
 
 class PTRRecord : public Record {
 
 public:
-    PTRRecord(bool meta = false);
+    PTRRecord(Label label, Label targetLabel, bool meta = false);
 
-    virtual void writeSpecific(Buffer& buffer);
-
-    void setTargetLabel(Label* label);
+    virtual void writeSpecific(Buffer& buffer) const;
 
 private:
-    Label* targetLabel;
+    Label targetLabel;
 };
 
 class SRVRecord : public Record {
 
 public:
-    SRVRecord();
+    SRVRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer);
+    virtual void writeSpecific(Buffer& buffer) const;
 
-    void setHostLabel(Label* label);
-
+    void setHostRecord(std::shared_ptr<Record> host);
     void setPort(uint16_t port);
 
 private:
-    Label* hostLabel;
+    std::shared_ptr<Record> hostRecord;
     uint16_t port;
 };
 
 class TXTRecord : public Record {
 
 public:
-    TXTRecord();
+    TXTRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer);
+    virtual void writeSpecific(Buffer& buffer) const;
 
     void addEntry(std::string key, std::string value = "");
 
 private:
     std::vector<std::string> data;
 };
-
-#endif

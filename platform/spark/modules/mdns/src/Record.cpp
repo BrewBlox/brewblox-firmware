@@ -1,20 +1,15 @@
 #include "Record.h"
-
-#include "Label.h"
 #include "spark_wiring_wifi.h"
+#include <memory>
+#include <string>
 
-Record::Record(uint16_t type, uint16_t cls, uint32_t ttl, bool announce)
+Record::Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce)
+    : label(std::move(label))
+    , type(type)
+    , cls(cls)
+    , ttl(ttl)
+    , announce(announce)
 {
-    this->type = type;
-    this->cls = cls;
-    this->ttl = ttl;
-    this->announce = announce;
-}
-
-void
-Record::setLabel(Label* label)
-{
-    this->label = label;
 }
 
 void
@@ -56,9 +51,15 @@ Record::setKnownRecord()
 }
 
 void
-Record::write(Buffer& buffer)
+Record::writeLabel(Buffer& buffer) const
 {
-    label->write(buffer);
+    label.write(buffer);
+}
+
+void
+Record::write(Buffer& buffer) const
+{
+    writeLabel(buffer);
     buffer.writeUInt16(type);
     buffer.writeUInt16(cls);
     buffer.writeUInt32(ttl);
@@ -73,19 +74,19 @@ Record::reset()
     this->knownRecord = false;
 }
 
-Label*
-Record::getLabel()
+const Label&
+Record::getLabel() const
 {
     return label;
 }
 
-ARecord::ARecord()
-    : Record(A_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
+ARecord::ARecord(Label label)
+    : Record(std::move(label), A_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
 {
 }
 
 void
-ARecord::writeSpecific(Buffer& buffer)
+ARecord::writeSpecific(Buffer& buffer) const
 {
     buffer.writeUInt16(4);
     IPAddress ip = spark::WiFi.localIP();
@@ -94,36 +95,36 @@ ARecord::writeSpecific(Buffer& buffer)
     }
 }
 
-NSECRecord::NSECRecord()
-    : Record(NSEC_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
+NSECRecord::NSECRecord(Label label)
+    : Record(std::move(label), NSEC_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
 {
 }
 
-HostNSECRecord::HostNSECRecord()
-    : NSECRecord()
+HostNSECRecord::HostNSECRecord(Label label)
+    : NSECRecord(std::move(label))
 {
 }
 
 void
-HostNSECRecord::writeSpecific(Buffer& buffer)
+HostNSECRecord::writeSpecific(Buffer& buffer) const
 {
     buffer.writeUInt16(5);
-    getLabel()->write(buffer);
+    writeLabel(buffer);
     buffer.writeUInt8(0);
     buffer.writeUInt8(1);
     buffer.writeUInt8(0x40);
 }
 
-InstanceNSECRecord::InstanceNSECRecord()
-    : NSECRecord()
+InstanceNSECRecord::InstanceNSECRecord(Label label)
+    : NSECRecord(std::move(label))
 {
 }
 
 void
-InstanceNSECRecord::writeSpecific(Buffer& buffer)
+InstanceNSECRecord::writeSpecific(Buffer& buffer) const
 {
     buffer.writeUInt16(9);
-    getLabel()->write(buffer);
+    writeLabel(buffer);
     buffer.writeUInt8(0);
     buffer.writeUInt8(5);
     buffer.writeUInt8(0);
@@ -133,43 +134,43 @@ InstanceNSECRecord::writeSpecific(Buffer& buffer)
     buffer.writeUInt8(0x40);
 }
 
-PTRRecord::PTRRecord(bool meta)
-    : Record(PTR_TYPE, IN_CLASS, TTL_75MIN, !meta)
+PTRRecord::PTRRecord(Label label, Label target, bool meta)
+    : Record(std::move(label), PTR_TYPE, IN_CLASS, TTL_75MIN, !meta)
+    , targetLabel(std::move(target))
 {
 }
 
 void
-PTRRecord::writeSpecific(Buffer& buffer)
+PTRRecord::writeSpecific(Buffer& buffer) const
 {
-    buffer.writeUInt16(targetLabel->getWriteSize());
-    targetLabel->write(buffer);
+    targetLabel.write(buffer);
 }
 
-void
-PTRRecord::setTargetLabel(Label* label)
-{
-    targetLabel = label;
-}
-
-SRVRecord::SRVRecord()
-    : Record(SRV_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
+SRVRecord::SRVRecord(Label label)
+    : Record(std::move(label), SRV_TYPE, IN_CLASS | CACHE_FLUSH, TTL_2MIN)
 {
 }
 
 void
-SRVRecord::writeSpecific(Buffer& buffer)
+SRVRecord::writeSpecific(Buffer& buffer) const
 {
-    buffer.writeUInt16(6 + hostLabel->getWriteSize());
+    uint16_t hostLabelSize = 0;
+    if (hostRecord) {
+        hostLabelSize = hostRecord->getLabel().name.size();
+    }
+    buffer.writeUInt16(6 + hostLabelSize);
     buffer.writeUInt16(0);
     buffer.writeUInt16(0);
     buffer.writeUInt16(port);
-    hostLabel->write(buffer);
+    if (hostLabelSize) {
+        hostRecord->writeLabel(buffer);
+    }
 }
 
 void
-SRVRecord::setHostLabel(Label* label)
+SRVRecord::setHostRecord(std::shared_ptr<Record> host)
 {
-    hostLabel = label;
+    hostRecord = std::move(host);
 }
 
 void
@@ -178,8 +179,8 @@ SRVRecord::setPort(uint16_t port)
     this->port = port;
 }
 
-TXTRecord::TXTRecord()
-    : Record(TXT_TYPE, IN_CLASS | CACHE_FLUSH, TTL_75MIN)
+TXTRecord::TXTRecord(Label label)
+    : Record(std::move(label), TXT_TYPE, IN_CLASS | CACHE_FLUSH, TTL_75MIN)
 {
 }
 
@@ -197,7 +198,7 @@ TXTRecord::addEntry(std::string key, std::string value)
 }
 
 void
-TXTRecord::writeSpecific(Buffer& buffer)
+TXTRecord::writeSpecific(Buffer& buffer) const
 {
     uint16_t size = 0;
 

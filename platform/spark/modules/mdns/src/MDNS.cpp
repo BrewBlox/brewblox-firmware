@@ -2,118 +2,55 @@
 #include "spark_wiring_wifi.h"
 #include <memory>
 
-bool
-MDNS::setHostname(std::string hostname)
+MDNS::MDNS(std::string hostname)
+    : buffer(BUFFER_SIZE)
+    , hostRecord(hostname, LOCAL)
+    , txtRecord(hostname, LOCAL)
 {
-    bool success = true;
-    std::string status = "Ok";
 
-    if (labels[HOSTNAME]) {
-        status = "Hostname already set";
-        success = false;
-    }
-
-    if (success && hostname.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(hostname)) {
-        aRecord = std::make_shared<ARecord>();
-
-        auto hostNSECRecord = std::make_shared<HostNSECRecord>();
-
-        records.push_back(aRecord);
-        records.push_back(hostNSECRecord);
-
-        Label* label = new HostLabel(aRecord, hostNSECRecord, std::move(hostname), LOCAL);
-
-        labels[HOSTNAME] = label;
-        labels[META_SERVICE] = META;
-
-        aRecord->setLabel(label);
-        hostNSECRecord->setLabel(label);
-    } else {
-        status = success ? "Invalid hostname" : status;
-        success = false;
-    }
-
-    return success;
+    records.push_back(hostRecord);
+    records.push_back(txtRecord);
+    records.push_back(std::make_shared<HostNSECRecord>(std::move(hostname, LOCAL));
 }
 
 bool
 MDNS::addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices)
 {
-    bool success = true;
-    std::string status = "Ok";
+    if (protocol.length() < MAX_LABEL_SIZE - 1 && service.length() < MAX_LABEL_SIZE - 1 && instance.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(protocol) && isAlphaDigitHyphen(service) && isNetUnicode(instance)) {
 
-    if (!labels[HOSTNAME]) {
-        status = "Hostname not set";
-        success = false;
-    }
+        Label protocolLabel("_" + protocol, LOCAL);
 
-    if (success && protocol.length() < MAX_LABEL_SIZE - 1 && service.length() < MAX_LABEL_SIZE - 1 && instance.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(protocol) && isAlphaDigitHyphen(service) && isNetUnicode(instance)) {
+        auto protocolRecord = std::make_shared<PTRRecord>(protocolLabel, "", false); // meta record
 
-        auto ptrRecord = std::make_shared<PTRRecord>();
-        auto srvRecord = std::make_shared<SRVRecord>();
-        auto txtRecord = std::make_shared<TXTRecord>();
-        auto instanceNSECRecord = std::make_shared<InstanceNSECRecord>();
-        auto enumerationRecord = std::make_shared<PTRRecord>();
+        Label serviceLabel("_" + service, protocolRecord);
+        auto servicePtrRecord = std::make_shared<PTRRecord>(serviceLabel);
 
-        records.push_back(ptrRecord);
-        records.push_back(srvRecord);
-        records.push_back(txtRecord);
-        records.push_back(instanceNSECRecord);
-        records.push_back(enumerationRecord);
+        Label instanceLabel(instance, servicePtrRecord);
+        auto srvRecord = std::make_shared<SRVRecord>(instanceLabel);
+        servicePtrRecord->setTargetLabel("", SRVRecord);
 
-        std::string serviceString = "_" + service + "._" + protocol;
+        auto txtRecord = std::make_shared<TXTRecord>("", srvRecord);
+        auto instanceNSECRecord = std::make_shared<InstanceNSECRecord>("", SRVRecord);
 
-        Label* protocolLabel = new Label("_" + protocol, LOCAL);
+        srvRecord->setHostRecord(HOST);
+        srvRecord->setPort(port);
 
-        if (labels[serviceString] == nullptr) {
-            labels[serviceString] = new ServiceLabel(aRecord, "_" + service, protocolLabel);
-        }
-
-        ((ServiceLabel*)labels[serviceString])->addInstance(ptrRecord, srvRecord, txtRecord);
-
-        std::string instanceString = instance + "._" + service + "._" + protocol;
-
-        labels[instanceString] = new InstanceLabel(srvRecord, txtRecord, instanceNSECRecord, aRecord, instance, labels[serviceString], true);
-        META->addService(enumerationRecord);
+        records.push_back(servicePtrRecord);
+        records.push_back(std::move(srvRecord));
+        records.push_back(std::move(txtRecord));
+        records.push_back(std::move(instanceNSECRecord));
 
         for (auto const& s : subServices) {
-            std::string subServiceString = "_" + s + "._sub." + serviceString;
+            std::string subServiceString = "_" + s + "._sub.";
 
-            if (labels[subServiceString] == nullptr) {
-                labels[subServiceString] = new ServiceLabel(aRecord, "_" + s, new Label("_sub", labels[serviceString]));
-            }
+            auto subPTRRecord = std::make_shared<PTRRecord>(std::move(subserviceString), ptrRecord);
 
-            auto subPTRRecord = std::make_shared<PTRRecord>();
-            auto enumerationSubPTRRecord = std::make_shared<PTRRecord>();
-
-            subPTRRecord->setLabel(labels[subServiceString]);
-            subPTRRecord->setTargetLabel(labels[instanceString]);
-
-            enumerationSubPTRRecord->setLabel(META);
-            enumerationSubPTRRecord->setTargetLabel(labels[subServiceString]);
-
+            subPTRRecord->setTargetLabel("", ptrRecord);
             records.push_back(subPTRRecord);
-            records.push_back(enumerationSubPTRRecord);
-
-            ((ServiceLabel*)labels[subServiceString])->addInstance(subPTRRecord, srvRecord, txtRecord);
-            META->addService(enumerationSubPTRRecord);
         }
-
-        ptrRecord->setLabel(labels[serviceString]);
-        ptrRecord->setTargetLabel(labels[instanceString]);
-        srvRecord->setLabel(labels[instanceString]);
-        srvRecord->setPort(port);
-        srvRecord->setHostLabel(labels[HOSTNAME]);
-        txtRecord->setLabel(labels[instanceString]);
-        instanceNSECRecord->setLabel(labels[instanceString]);
-        enumerationRecord->setLabel(META);
-        enumerationRecord->setTargetLabel(labels[serviceString]);
-    } else {
-        status = success ? "Invalid name" : status;
-        success = false;
+        return true;
     }
-
-    return success;
+    return false;
 }
 
 void

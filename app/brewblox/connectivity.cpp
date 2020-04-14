@@ -30,7 +30,6 @@
 volatile uint32_t localIp = 0;
 volatile bool wifiIsConnected = false;
 
-auto mdns = MDNS();
 volatile bool mdns_started = false;
 volatile bool http_started = false;
 #if PLATFORM_ID == PLATFORM_GCC
@@ -132,6 +131,13 @@ deviceIdUint8Ptr()
     return reinterpret_cast<const uint8_t*>(hexId);
 }
 
+MDNS&
+theMdns()
+{
+    static MDNS theStaticMDNS(deviceIdString());
+    return theStaticMDNS;
+}
+
 void
 manageConnections(uint32_t now)
 {
@@ -140,7 +146,7 @@ manageConnections(uint32_t now)
     if (wifiIsConnected) {
         if ((!mdns_started) || ((now - lastAnnounce) > 300000)) {
             // explicit announce every 5 minutes
-            mdns_started = mdns.begin(true);
+            mdns_started = theMdns().begin(true);
             lastAnnounce = now;
         }
         if (!http_started) {
@@ -148,7 +154,7 @@ manageConnections(uint32_t now)
         }
 
         if (mdns_started) {
-            mdns.processQueries();
+            theMdns().processQueries();
         }
         if (http_started) {
             TCPClient client = httpserver.available();
@@ -196,6 +202,7 @@ manageConnections(uint32_t now)
 void
 initMdns()
 {
+    auto mdns = theMdns();
     bool success = mdns.setHostname(deviceIdString());
     success = success && mdns.addService("tcp", "http", 80, deviceIdString());
     success = success && mdns.addService("tcp", "brewblox", 8332, deviceIdString());
