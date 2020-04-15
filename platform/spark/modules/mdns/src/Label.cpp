@@ -1,5 +1,7 @@
+#if 0
 #include "Label.h"
 #include "stdlib.h"
+
 
 Label::Label(std::string name_, Label* nextLabel_, bool caseSensitive_)
     : data(std::move(name_))
@@ -333,3 +335,5 @@ MetaLabel::matched(uint16_t type, uint16_t cls)
         break;
     }
 }
+
+#endif

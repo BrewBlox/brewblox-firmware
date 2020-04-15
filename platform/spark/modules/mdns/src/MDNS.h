@@ -42,8 +42,8 @@ private:
     UDP udp;
     Buffer buffer;
 
-    std::shared_ptr<Label> ROOT = std::make_shared<Label>("");
-    std::shared_ptr<Label> LOCAL = std::make_shared<Label>("local");
+    std::shared_ptr<PTRRecord> ROOT = std::make_shared<PTRRecord>(Label(""), true);
+    std::shared_ptr<PTRRecord> LOCAL = std::make_shared<PTRRecord>(Label("local", ROOT), true);
     std::shared_ptr<ARecord> hostRecord;
     std::shared_ptr<TXTRecord> txtRecord;
     std::vector<std::shared_ptr<Record>> records;

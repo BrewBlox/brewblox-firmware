@@ -134,16 +134,23 @@ InstanceNSECRecord::writeSpecific(Buffer& buffer) const
     buffer.writeUInt8(0x40);
 }
 
-PTRRecord::PTRRecord(Label label, Label target, bool meta)
+PTRRecord::PTRRecord(Label label, bool meta)
     : Record(std::move(label), PTR_TYPE, IN_CLASS, TTL_75MIN, !meta)
-    , targetLabel(std::move(target))
 {
+}
+
+void
+PTRRecord::setTargetRecord(std::shared_ptr<Record> target)
+{
+    targetRecord = std::move(target);
 }
 
 void
 PTRRecord::writeSpecific(Buffer& buffer) const
 {
-    targetLabel.write(buffer);
+    if (targetRecord) {
+        targetRecord->writeLabel(buffer);
+    }
 }
 
 SRVRecord::SRVRecord(Label label)

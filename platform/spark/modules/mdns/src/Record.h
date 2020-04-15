@@ -21,17 +21,28 @@
 
 #define IP_SIZE 4
 
+#define DOT '.'
+
+#define END_OF_NAME 0x0
+#define LABEL_POINTER 0xc0
+#define MAX_LABEL_SIZE 63
+#define INVALID_OFFSET -1
+
+#define UNKNOWN_NAME -1
+#define BUFFER_UNDERFLOW -2
+
 class Record;
 
 class Label {
 public:
     Label(std::string _name)
         : name(std::move(_name))
+        , next()
     {
     }
-    Label(std::string _name, std::shared_ptr<Record> _next)
+    Label(std::string _name, const std::shared_ptr<Record>& _next)
         : name(std::move(_name))
-        , next(std::move(_next))
+        , next(_next)
     {
     }
 
@@ -96,8 +107,6 @@ class NSECRecord : public Record {
 
 public:
     NSECRecord(Label label);
-
-    virtual void writeSpecific(Buffer& buffer) = 0;
 };
 
 class HostNSECRecord : public NSECRecord {
@@ -119,12 +128,13 @@ public:
 class PTRRecord : public Record {
 
 public:
-    PTRRecord(Label label, Label targetLabel, bool meta = false);
+    PTRRecord(Label label, bool meta = false);
 
     virtual void writeSpecific(Buffer& buffer) const;
+    void setTargetRecord(std::shared_ptr<Record> target);
 
 private:
-    Label targetLabel;
+    std::shared_ptr<Record> targetRecord;
 };
 
 class SRVRecord : public Record {

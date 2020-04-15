@@ -203,8 +203,7 @@ void
 initMdns()
 {
     auto mdns = theMdns();
-    bool success = mdns.setHostname(deviceIdString());
-    success = success && mdns.addService("tcp", "http", 80, deviceIdString());
+    bool success = mdns.addService("tcp", "http", 80, deviceIdString());
     success = success && mdns.addService("tcp", "brewblox", 8332, deviceIdString());
     if (success) {
         auto hw = std::string("Spark ");

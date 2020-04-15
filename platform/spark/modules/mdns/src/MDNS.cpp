@@ -4,35 +4,35 @@
 
 MDNS::MDNS(std::string hostname)
     : buffer(BUFFER_SIZE)
-    , hostRecord(hostname, LOCAL)
-    , txtRecord(hostname, LOCAL)
+    , hostRecord(std::make_shared<ARecord>(Label(hostname, this->LOCAL)))
+    , txtRecord(std::make_shared<TXTRecord>(Label("", this->hostRecord)))
 {
 
     records.push_back(hostRecord);
     records.push_back(txtRecord);
-    records.push_back(std::make_shared<HostNSECRecord>(std::move(hostname, LOCAL));
+    records.push_back(std::make_shared<HostNSECRecord>(Label("", this->hostRecord)));
 }
 
 bool
-MDNS::addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices)
+MDNS::addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices = {})
 {
     if (protocol.length() < MAX_LABEL_SIZE - 1 && service.length() < MAX_LABEL_SIZE - 1 && instance.length() < MAX_LABEL_SIZE && isAlphaDigitHyphen(protocol) && isAlphaDigitHyphen(service) && isNetUnicode(instance)) {
 
         Label protocolLabel("_" + protocol, LOCAL);
 
-        auto protocolRecord = std::make_shared<PTRRecord>(protocolLabel, "", false); // meta record
+        auto protocolRecord = std::make_shared<PTRRecord>(protocolLabel, false); // meta record
 
         Label serviceLabel("_" + service, protocolRecord);
         auto servicePtrRecord = std::make_shared<PTRRecord>(serviceLabel);
 
         Label instanceLabel(instance, servicePtrRecord);
         auto srvRecord = std::make_shared<SRVRecord>(instanceLabel);
-        servicePtrRecord->setTargetLabel("", SRVRecord);
+        servicePtrRecord->setTargetRecord(srvRecord);
 
-        auto txtRecord = std::make_shared<TXTRecord>("", srvRecord);
-        auto instanceNSECRecord = std::make_shared<InstanceNSECRecord>("", SRVRecord);
+        auto txtRecord = std::make_shared<TXTRecord>(Label("", srvRecord));
+        auto instanceNSECRecord = std::make_shared<InstanceNSECRecord>(Label("", srvRecord));
 
-        srvRecord->setHostRecord(HOST);
+        srvRecord->setHostRecord(hostRecord);
         srvRecord->setPort(port);
 
         records.push_back(servicePtrRecord);
@@ -43,9 +43,9 @@ MDNS::addService(std::string protocol, std::string service, uint16_t port, std::
         for (auto const& s : subServices) {
             std::string subServiceString = "_" + s + "._sub.";
 
-            auto subPTRRecord = std::make_shared<PTRRecord>(std::move(subserviceString), ptrRecord);
+            auto subPTRRecord = std::make_shared<PTRRecord>(Label(std::move(subServiceString), hostRecord));
 
-            subPTRRecord->setTargetLabel("", ptrRecord);
+            subPTRRecord->setTargetRecord(servicePtrRecord);
             records.push_back(subPTRRecord);
         }
         return true;
@@ -112,18 +112,20 @@ MDNS::getResponses()
         uint8_t count = 0;
 
         while (count++ < header.qdcount && buffer.available() > 0) {
-            Label* label = matcher->match(labels, buffer);
+            for (const auto& r : records) {
+                Label* label = matcher->match(labels, buffer);
 
-            if (buffer.available() >= 4) {
-                uint16_t type = buffer.readUInt16();
-                uint16_t cls = buffer.readUInt16();
+                if (buffer.available() >= 4) {
+                    uint16_t type = buffer.readUInt16();
+                    uint16_t cls = buffer.readUInt16();
 
-                if (label != nullptr) {
+                    if (label != nullptr) {
 
-                    label->matched(type, cls);
+                        label->matched(type, cls);
+                    }
+                } else {
+                    // status = "Buffer underflow at index " + buffer.getOffset();
                 }
-            } else {
-                status = "Buffer underflow at index " + buffer.getOffset();
             }
         }
     }
@@ -189,10 +191,6 @@ MDNS::writeResponses()
         buffer.write(udp);
 
         udp.endPacket();
-    }
-
-    for (auto& l : labels) {
-        l.second->reset();
     }
 
     for (auto& r : records) {
