@@ -32,11 +32,9 @@ volatile bool wifiIsConnected = false;
 
 volatile bool mdns_started = false;
 volatile bool http_started = false;
-#if PLATFORM_ID == PLATFORM_GCC
-auto httpserver = TCPServer(8380); // listen on 8380 to serve a simple page with instructions
-#else
-auto httpserver = TCPServer(80); // listen on 80 to serve a simple page with instructions
-#endif
+
+constexpr uint16_t webPort = PLATFORM_ID == PLATFORM_GCC ? 8380 : 80;
+static TCPServer httpserver(webPort); // Serve a simple page with instructions
 
 void
 printWiFiIp(char dest[16])
@@ -64,7 +62,7 @@ wifiSignal()
 bool
 serialConnected()
 {
-    return _fetch_usbserial().isConnected();
+    return HAL_USB_USART_Is_Connected(HAL_USB_USART_SERIAL);
 }
 
 bool
@@ -166,8 +164,7 @@ manageConnections(uint32_t now)
                                         "<p>Your BrewBlox Spark is online but it does not run its own web server. "
                                         "Please install a BrewBlox server to connect to it using the BrewBlox protocol.</p>"
                                         "<p>Device ID = ";
-
-                uint8_t end[] = "</p></body></html>\n\n";
+                const uint8_t end[] = "</p></body></html>\n\n";
 
                 client.write(start, sizeof(start), 0);
                 if (!client.getWriteError()) {
@@ -186,6 +183,8 @@ manageConnections(uint32_t now)
             return;
         }
     } else {
+        httpserver.stop();
+        // mdns.stop();
         mdns_started = false;
         http_started = false;
     }
@@ -245,7 +244,7 @@ void
 wifiInit()
 {
     System.disable(SYSTEM_FLAG_RESET_NETWORK_ON_CLOUD_ERRORS);
-    spark::WiFi.setListenTimeout(30);
+    spark::WiFi.setListenTimeout(45);
     spark::WiFi.connect(WIFI_CONNECT_SKIP_LISTEN);
     System.on(network_status, handleNetworkEvent);
     initMdns();
@@ -313,7 +312,6 @@ updateFirmwareFromStream(cbox::StreamType streamType)
 {
     if (streamType == cbox::StreamType::Usb) {
         auto ser = Serial;
-        WITH_LOCK(ser);
         if (ser.baud() == 0) {
             ser.begin(115200);
         }

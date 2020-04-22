@@ -29,6 +29,7 @@
 #include "GroupsObject.h"
 #include "Object.h"
 #include "ObjectContainer.h"
+#include "ObjectFactory.h"
 #include "ObjectStorage.h"
 #include "ScanningFactory.h"
 #include <memory>
@@ -40,7 +41,7 @@ handleReset(bool exit, uint8_t reason);
 
 namespace cbox {
 
-Box::Box(ObjectFactory& _factory,
+Box::Box(const ObjectFactory& _factory,
          ObjectContainer& _objects,
          ObjectStorage& _storage,
          ConnectionPool& _connections,

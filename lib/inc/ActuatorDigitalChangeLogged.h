@@ -117,12 +117,14 @@ public:
             ticks_millis_t currentPeriod;
             ticks_millis_t previousActive;
             ticks_millis_t previousPeriod;
+            State lastState;
         } result;
 
         result.currentActive = 0;
         result.currentPeriod = 0;
         result.previousActive = 0;
         result.previousPeriod = 0;
+        result.lastState = history[0].newState;
         auto end = now;
         auto start = ticks_millis_t(0);
         //auto minStartTime = now - maxHistory;

@@ -17,41 +17,44 @@
  * along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "SPIArbiter.h"
 
-void SPIArbiter::apply(SPIConfiguration& client){
-    if(ss_pin_ == SS_PIN_UNINITIALIZED){
-    	// first time using the SPI, initialize it.
-		// this applies Particle defaults, so do it before configuring the mode, clock and bit order.
-		// only do it when the SPI is first used.
-		spi_.begin(client.getSSPin());
+void
+SPIArbiter::apply(SPIConfiguration& client)
+{
+    if (ss_pin_ == SS_PIN_UNINITIALIZED) {
+        // first time using the SPI, initialize it.
+        // this applies Particle defaults, so do it before configuring the mode, clock and bit order.
+        // only do it when the SPI is first used.
+        HAL_SPI_Begin(HAL_SPI_INTERFACE1, client.getSSPin());
     }
 
-	if (ss_pin_!= client.getSSPin()){
-		ss_pin_ = client.getSSPin();
-		digitalWrite(ss_pin_, LOW); // select new client
+    if (ss_pin_ != client.getSSPin()) {
+        ss_pin_ = client.getSSPin();
+        digitalWrite(ss_pin_, LOW); // select new client
     }
-    if (mode_!=client.getMode()) {
+    if (mode_ != client.getMode()) {
         mode_ = client.getMode();
-        spi_.setDataMode(mode_);
+        HAL_SPI_Set_Data_Mode(HAL_SPI_INTERFACE1, mode_);
     }
 
-    if (bitOrder_!=client.getBitOrder()) {
+    if (bitOrder_ != client.getBitOrder()) {
         bitOrder_ = client.getBitOrder();
-        spi_.setBitOrder(bitOrder_);
+        HAL_SPI_Set_Bit_Order(HAL_SPI_INTERFACE1, bitOrder_);
     }
 
-    if (clockDivider_!=client.getClockDivider()) {
+    if (clockDivider_ != client.getClockDivider()) {
         clockDivider_ = client.getClockDivider();
-        spi_.setClockDivider(clockDivider_);
+        HAL_SPI_Set_Clock_Divider(HAL_SPI_INTERFACE1, clockDivider_);
     }
 }
 
-void SPIArbiter::unapply() {
-	digitalWrite(ss_pin_, HIGH); // unselect pin
-	ss_pin_ = SS_PIN_NONE;
-	// spi_.end(); do not end global SPI, leave SPI Active.
+void
+SPIArbiter::unapply()
+{
+    digitalWrite(ss_pin_, HIGH); // unselect pin
+    ss_pin_ = SS_PIN_NONE;
+    // spi_.end(); do not end global SPI, leave SPI Active.
 }
 
-SPIArbiter GlobalSPIArbiter(SPI);
+SPIArbiter GlobalSPIArbiter;

@@ -148,7 +148,7 @@ makeBrewBloxBox()
             cbox::ContainedObject(19, 0x80, std::make_shared<PinsBlock>()),
     });
 
-    static cbox::ObjectFactory objectFactory = {
+    static const cbox::ObjectFactory objectFactory{
         {TempSensorOneWireBlock::staticTypeId(), std::make_shared<TempSensorOneWireBlock>},
         {SetpointSensorPairBlock::staticTypeId(), []() { return std::make_shared<SetpointSensorPairBlock>(objects); }},
         {TempSensorMockBlock::staticTypeId(), std::make_shared<TempSensorMockBlock>},
@@ -172,6 +172,7 @@ makeBrewBloxBox()
     static cbox::ConnectionPool& connections = theConnectionPool();
 
     std::vector<std::unique_ptr<cbox::ScanningFactory>> scanningFactories;
+    scanningFactories.reserve(1);
 #if PLATFORM_ID == 3
     scanningFactories.push_back(std::make_unique<MockOneWireScanningFactory>(objects, theOneWire()));
 #else

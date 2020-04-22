@@ -38,7 +38,7 @@ private:
     // A single container is used for both system and user objects.
     // The application can add the system objects first, then set the start ID to a higher value.
     // The objects with an ID lower than the start ID cannot be deleted.
-    ObjectFactory& factory;
+    const ObjectFactory& factory;
     ObjectContainer& objects;
     ObjectStorage& storage;
     // Box receives commands from connections in the connection pool and streams back the answer to the same connection
@@ -67,7 +67,7 @@ private:
     CboxError loadSingleObjectFromStorage(const storage_id_t& id, RegionDataIn& objInStorage);
 
 public:
-    Box(ObjectFactory& _factory,
+    Box(const ObjectFactory& _factory,
         ObjectContainer& _objects,
         ObjectStorage& _storage,
         ConnectionPool& _connections,
@@ -76,7 +76,6 @@ public:
     Box(const Box&) = delete;
     Box& operator=(const Box&) = delete;
     Box(Box&&) = default;
-    Box& operator=(Box&&) = default;
 
     ~Box() = default;
 
@@ -153,6 +152,11 @@ public:
     void stopConnections()
     {
         connections.stopAll();
+    }
+
+    void unloadAllObjects()
+    {
+        objects.clearAll();
     }
 };
 

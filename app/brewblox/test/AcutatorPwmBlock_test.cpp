@@ -83,7 +83,7 @@ SCENARIO("A Blox ActuatorPwm object can be created from streamed protobuf data")
 
     CHECK(testBox.lastReplyHasStatusOk());
     CHECK(decoded.ShortDebugString() == "actuatorId: 100 "
-                                        "period: 4000 setting: 81920 value: 81899 "
+                                        "period: 4000 setting: 81920 "
                                         "constrainedBy { constraints { min: 40960 } } "
                                         "drivenActuatorId: 100 "
                                         "enabled: true "

@@ -197,6 +197,13 @@ public:
         objects.erase(userbegin(), cend());
     }
 
+    // remove all objects from the container
+    void clearAll()
+    {
+        objects.clear();
+        objects.shrink_to_fit();
+    }
+
     void update(update_t now)
     {
         for (auto& cobj : objects) {

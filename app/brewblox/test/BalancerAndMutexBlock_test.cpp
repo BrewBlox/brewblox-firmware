@@ -308,7 +308,7 @@ SCENARIO("Two pin actuators are constrained by a mutex", "[balancer, mutex]")
             testBox.processInputToProto(decoded);
             CHECK(testBox.lastReplyHasStatusOk());
             CHECK(decoded.ShortDebugString() == "actuatorId: 102 "
-                                                "period: 4000 setting: 204800 value: 163840 "
+                                                "period: 4000 setting: 204800 "
                                                 "constrainedBy { "
                                                 "constraints { "
                                                 "balanced { balancerId: 200 granted: 204800 id: 1 } "

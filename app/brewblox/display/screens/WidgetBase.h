@@ -55,10 +55,7 @@ public:
     {
         static const char errTxt[] = "--.-";
         auto s = std::move(txt);
-        if (s.size() > 5) {
-            D4D_SetText(obj, errTxt);
-            return;
-        }
+
         if (!s.empty()) {
             D4D_SetText(obj, s.c_str());
             D4D_EnableObject(obj, true);

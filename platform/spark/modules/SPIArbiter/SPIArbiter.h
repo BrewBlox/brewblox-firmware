@@ -21,43 +21,10 @@
 
 #include "spark_wiring_spi.h"
 #include <functional>
+#include <mutex>
 
 const uint16_t SS_PIN_NONE = UINT16_MAX - 1;
 const uint16_t SS_PIN_UNINITIALIZED = UINT16_MAX;
-
-template <class T>
-class GuardedResource {
-public:
-#if PLATFORM_THREADING
-    inline os_mutex_recursive_t _get_mutex()
-    {
-        return (static_cast<T*>(this))->get_mutex();
-    }
-#endif
-
-    inline bool try_lock()
-    {
-#if PLATFORM_THREADING
-        return !os_mutex_recursive_trylock(_get_mutex());
-#else
-        return true;
-#endif
-    }
-
-    inline void lock()
-    {
-#if PLATFORM_THREADING
-        os_mutex_recursive_lock(_get_mutex());
-#endif
-    }
-
-    inline void unlock()
-    {
-#if PLATFORM_THREADING
-        os_mutex_recursive_unlock(_get_mutex());
-#endif
-    }
-};
 
 class SPIConfiguration {
 public:
@@ -83,46 +50,27 @@ public:
     inline uint16_t getSSPin() const { return ss_pin_; }
 };
 
-class SPIArbiter : private SPIConfiguration, public GuardedResource<SPIArbiter> {
+class SPIArbiter : private SPIConfiguration {
     SPIConfiguration* current_;
-    SPIClass& spi_;
-#if PLATFORM_THREADING
-    os_mutex_recursive_t mutex_;
-#endif
+
+    std::mutex mutex;
+
     void unapply();
     void apply(SPIConfiguration& client);
 
-#if PLATFORM_THREADING
-    os_mutex_recursive_t get_mutex()
-    {
-        return mutex_;
-    }
-#endif
-    friend class GuardedResource<SPIArbiter>;
-
 public:
-    SPIArbiter(SPIClass& spi)
+    SPIArbiter()
         : current_(nullptr)
-        , spi_(spi)
-#if PLATFORM_THREADING
-        , mutex_(nullptr)
-#endif
     {
-#if PLATFORM_THREADING
-        os_mutex_recursive_create(&mutex_);
-#endif
     }
 
     ~SPIArbiter()
     {
-#if PLATFORM_THREADING
-        os_mutex_recursive_destroy(&mutex_);
-#endif
     }
 
     inline bool try_begin(SPIConfiguration& client)
     {
-        if (isClient(client) || try_lock()) {
+        if (isClient(client) || mutex.try_lock()) {
             current_ = &client;
             apply(client);
         }
@@ -131,7 +79,7 @@ public:
 
     inline void begin(SPIConfiguration& client)
     {
-        lock();
+        mutex.lock();
         current_ = &client;
         apply(client);
     }
@@ -141,7 +89,7 @@ public:
         if (isClient(client)) {
             current_ = nullptr;
             unapply();
-            unlock();
+            mutex.unlock();
         }
     }
 
@@ -151,7 +99,8 @@ public:
     inline uint8_t transfer(SPIConfiguration& client, uint8_t data)
     {
         if (isClient(client)) {
-            return spi_.transfer(data);
+
+            return HAL_SPI_Send_Receive_Data(HAL_SPI_INTERFACE1, data);
         }
         return 0;
     }
@@ -159,7 +108,7 @@ public:
     inline void transfer(SPIConfiguration& client, void* tx_buffer, void* rx_buffer, size_t length, wiring_spi_dma_transfercomplete_callback_t user_callback)
     {
         if (isClient(client)) {
-            spi_.transfer(tx_buffer, rx_buffer, length, user_callback);
+            HAL_SPI_DMA_Transfer(HAL_SPI_INTERFACE1, tx_buffer, rx_buffer, length, user_callback);
         }
         // todo - should we independently track that DMA is in progress?
     }
@@ -167,7 +116,7 @@ public:
     inline void transferCancel(SPIConfiguration& client)
     {
         if (isClient(client)) {
-            spi_.transferCancel();
+            HAL_SPI_DMA_Transfer_Cancel(HAL_SPI_INTERFACE1);
         }
     }
 

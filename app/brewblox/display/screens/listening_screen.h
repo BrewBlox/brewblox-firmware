@@ -17,24 +17,10 @@
  * along with BrewPi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Temperature.h"
-#include "WidgetBase.h"
+#include <cstdint>
+#include <string>
 
-class WidgetsScreen {
-private:
-    static std::vector<std::unique_ptr<WidgetBase>> widgets;
-    static WidgetSettings widgetSettings;
-
+class ListeningScreen {
 public:
-    WidgetsScreen() = default;
-    ~WidgetsScreen() = default;
-
-    static void loadSettings();
-    static void unload();
     static void activate();
-    static void updateUsb();
-    static void updateWiFi();
-    static void updateWidgets();
 };
-
-extern const D4D_SCREEN* process_values_screen;

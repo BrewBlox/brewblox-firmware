@@ -2,7 +2,7 @@ FROM node:12-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache make gcc g++ linux-headers eudev-dev python bash usbutils \
+RUN apk add --no-cache make gcc g++ linux-headers eudev-dev python bash usbutils curl \
   && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ dfu-util \
   && npm install serialport --build-from-source --unsafe-perm \
   && npm install particle-cli --unsafe-perm \

@@ -22,8 +22,8 @@
 #include "../logo/brewblox_logo.h"
 #include "BrewBlox.h"
 #include "blox/stringify.h"
-#include "core_hal.h"
 #include "d4d.hpp"
+#include "memory_info.h"
 #include "spark_wiring_ticks.h"
 #include "spark_wiring_timer.h"
 #include "stdio.h"
@@ -41,30 +41,25 @@ extern BrewPiTouch touch;
 #endif
 char stepTxt[32] = "Init board";
 char versionString[] = "version: " stringify(GIT_VERSION) " (" stringify(GIT_DATE) ")";
-char startup_mem_icon_str[2] = "\x2c";
-char startup_mem_val_str[10] = "";
 
 D4D_DECLARE_STD_PICTURE(scrStartup_logo, 70, 100, 180, 34, &bmp_brewblox_logo)
 D4D_DECLARE_STD_LABEL(scrStartup_step, stepTxt, 0, 193, 320, 15, FONT_REGULAR)
 D4D_DECLARE_STD_PROGRESS_BAR(scrStartup_progress, 0, 212, 320, 12, 0)
 D4D_DECLARE_STD_LABEL(scrStartup_version, versionString, 0, 224, 320, 15, FONT_REGULAR)
-D4D_DECLARE_STD_LABEL(scrStartup_mem_icon, startup_mem_icon_str, 256, 0, 20, 20, FONT_ICON);
-D4D_DECLARE_STD_LABEL(scrStartup_mem_text, startup_mem_val_str, 270, 0, 50, 20, FONT_REGULAR);
 
 D4D_DECLARE_SCREEN_BEGIN(screen_startup, ScrStartup_, 0, 0, (D4D_COOR)(D4D_SCREEN_SIZE_LONGER_SIDE), (D4D_COOR)(D4D_SCREEN_SIZE_SHORTER_SIDE), nullptr, 0, nullptr, (D4D_SCR_F_DEFAULT | D4D_SCR_F_TOUCHENABLE), nullptr)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_logo)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_version)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_progress)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_mem_icon)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_mem_text)
-D4D_DECLARE_SCREEN_OBJECT(scrStartup_step)
-
-D4D_DECLARE_SCREEN_END()
+&scrStartup_logo,
+    &scrStartup_version,
+    &scrStartup_progress,
+    &scr_mem_icon,
+    &scr_mem_text,
+    &scrStartup_step,
+    D4D_DECLARE_SCREEN_END();
 
 void
 StartupScreen::activate()
 {
-    D4D_EnableObject(&scrStartup_version, D4D_FALSE);
+    D4D_EnableObject(&scrStartup_version, D4D_FALSE); // disable for darker color
     D4D_ActivateScreen(&screen_startup, D4D_TRUE);
 }
 
@@ -89,7 +84,6 @@ StartupScreen::setStep(std::string&& txt)
 {
     auto s = txt;
     D4D_LabelSetText(&scrStartup_step, txt.c_str());
-    updateRam();
     D4D_Poll();
 }
 
@@ -108,24 +102,6 @@ StartupScreen::calibrateTouch()
 }
 
 void
-StartupScreen::updateRam()
-{
-    // bodfy of System::freeMemory copied here to prevent extra includes
-
-    runtime_info_t info;
-    memset(&info, 0, sizeof(info));
-    info.size = sizeof(info);
-    HAL_Core_Runtime_Info(&info, NULL);
-    uint8_t freePct = info.total_heap ? (100 * info.freeheap) / info.total_heap : 0;
-    uint8_t usedPct = 100 - freePct;
-    uint8_t maxPct = info.total_heap ? (100 * info.max_used_heap) / info.total_heap : 0;
-
-    snprintf(startup_mem_val_str, 10, "%2d%% %2d%%", usedPct, maxPct);
-
-    D4D_InvalidateObject(&scrStartup_mem_text, D4D_TRUE);
-}
-
-void
 ScrStartup_OnInit()
 {
     D4D_PrgrsBarSetValue(&scrStartup_progress, 0);
@@ -134,6 +110,7 @@ ScrStartup_OnInit()
 void
 ScrStartup_OnMain()
 {
+    updateRamDisplay();
 }
 
 void

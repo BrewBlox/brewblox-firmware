@@ -142,27 +142,17 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         auto previousHighTime = durations.previousActive;
         auto previousPeriod = durations.previousPeriod;
         auto currentPeriod = durations.currentPeriod;
-
-        // If previous period was shortened, convert to normal period by adding time at current duty setting
-        // This prevents shortened periods to cause shortened periods in the next cycle
-        // and prevents startup effects. By adding at current duty instead of OFF, the algorithm
-        // will not overcompensate when the actuator has been low for almost entire previous period
-        if (previousPeriod < m_period) {
-            auto shortenedBy = m_period - durations.previousPeriod;
-            previousPeriod = m_period;
-            previousHighTime += ticks_millis_t(shortenedBy * dutyFraction()) + 1;
-        }
+        auto lastHistoricState = durations.lastState;
+        auto invDutyTime = m_period - m_dutyTime;
         auto twoPeriodElapsed = previousPeriod + currentPeriod;
-
         auto twoPeriodHighTime = previousHighTime + currentHighTime;
 
         auto wait = duration_millis_t(0);
-        auto currentDesiredState = actPtr->desiredState();
-        auto invDutyTime = m_period - m_dutyTime;
 
-        if (currentDesiredState == State::Active) {
+        if (lastHistoricState == State::Active) {
             if (m_dutySetting == maxDuty()) {
                 m_dutyAchieved = maxDuty();
+                actPtr->desiredState(State::Active, now); // ensure desired state is correct
                 return now + 1000;
             }
 
@@ -178,7 +168,11 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
                 // maximum high time is the highest value among:
                 // - 1.5x the previous hight time
                 // - 1.5x the normal high time
-                auto maxHighTime = std::max(m_dutyTime, previousHighTime) * 3 / 2;
+
+                auto maxHighTime = std::max(m_dutyTime, previousHighTime);
+                if (previousPeriod >= m_period) {
+                    maxHighTime = maxHighTime * 3 / 2; // stretching allowed if previous period was not shortened
+                }
 
                 if (currentHighTime < maxHighTime) {
                     // for checking the currently achieved value, look back max 2 periods (toggles)
@@ -202,9 +196,10 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
                     }
                 }
             }
-        } else if (currentDesiredState == State::Inactive) {
+        } else if (lastHistoricState == State::Inactive) {
             if (m_dutySetting == value_t{0}) {
                 m_dutyAchieved = value_t{0};
+                actPtr->desiredState(State::Inactive, now); // ensure desired state is correct
                 return now + 1000;
             }
             auto currentLowTime = currentPeriod - currentHighTime;
@@ -221,7 +216,10 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
                 // - 1.5x the normal low time
 
                 auto previousLowTime = previousPeriod - previousHighTime;
-                auto maxLowTime = std::max(invDutyTime, previousLowTime) * 3 / 2;
+                auto maxLowTime = std::max(invDutyTime, previousLowTime);
+                if (previousPeriod >= m_period) {
+                    maxLowTime = maxLowTime * 3 / 2; // stretching allowed if previous period was not shortened
+                }
 
                 if (currentLowTime < maxLowTime) {
                     // for checking the currently achieved value, look back max 2 periods (toggles)
@@ -247,37 +245,39 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             }
         }
 
-        bool toggled = false;
-        auto currentState = actPtr->state();
+        // take into account period until next update in calculating achieved
+        auto twoPeriodTotal = twoPeriodElapsed + wait;
+
+        if (twoPeriodTotal < m_period * 2) {
+            // always calculate duty from at least 2 normal periods
+            // this prevents shortened cycle lengths to cause a higher duty to be reported than the setting
+            twoPeriodTotal = m_period * 2;
+        }
+        auto dutyAchieved = value_t{cnl::quotient(100 * twoPeriodHighTime, twoPeriodTotal)};
+
+        // calculate achieved duty cycle
+        // only update achieved if current cycle is long enough
+        // to let current state move achieved in the right direction
+        m_valueValid = true;
+        if (lastHistoricState == State::Active) {
+            if (dutyAchieved >= m_dutyAchieved) {
+                m_dutyAchieved = dutyAchieved;
+            }
+        } else if (lastHistoricState == State::Inactive) {
+            if (dutyAchieved <= m_dutyAchieved) {
+                m_dutyAchieved = dutyAchieved;
+            }
+        } else {
+            m_valueValid = false;
+            m_dutyAchieved = m_dutySetting;
+        }
 
         // Toggle actuator if necessary
-        if (m_enabled && m_settingValid && (wait == 0 || currentState != currentDesiredState)) {
-            if (currentDesiredState == State::Inactive) {
+        if (m_enabled && m_settingValid && (wait == 0)) {
+            if (lastHistoricState == State::Inactive) {
                 actPtr->desiredState(State::Active, now);
             } else {
                 actPtr->desiredState(State::Inactive, now);
-            }
-            if (currentState != actPtr->state()) {
-                toggled = true;
-            }
-        }
-
-        twoPeriodElapsed += wait; // take into account period until next update in calculating achieved
-        if (twoPeriodElapsed == 0) {
-            m_dutyAchieved = value_t{0};
-        } else {
-            if (currentState == State::Unknown) {
-                m_valueValid = false;
-            } else {
-                // calculate achieved duty cycle
-                auto dutyAchieved = value_t{cnl::quotient(100 * twoPeriodHighTime, twoPeriodElapsed)};
-                if (toggled // end of high or low time or
-                            // current period is long enough to start using the current achieved value including this period
-                    || (currentState == State::Inactive && dutyAchieved < m_dutyAchieved)
-                    || (currentState == State::Active && dutyAchieved > m_dutyAchieved)) {
-                    m_dutyAchieved = dutyAchieved;
-                    m_valueValid = true;
-                }
             }
         }
 

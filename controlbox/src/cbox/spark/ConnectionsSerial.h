@@ -31,7 +31,7 @@ public:
     SerialConnection(USBSerial& ser)
         : StreamRefConnection(ser)
     {
-        ser.flush(); // discard tx buffer
+        serial_connection_active = true;
     }
     virtual ~SerialConnection()
     {
@@ -41,7 +41,7 @@ public:
 
     virtual void stop() override final
     {
-        StreamRefConnection::get().flush(); // discard tx buffer
+        get().flush();
     }
 };
 
@@ -58,8 +58,7 @@ public:
 
     std::unique_ptr<Connection> newConnection() override final
     {
-        if (serial_enabled && !serial_connection_active && ser.isConnected() && ser.try_lock()) {
-            serial_connection_active = true;
+        if (serial_enabled && !serial_connection_active && ser.isConnected()) {
             return std::make_unique<SerialConnection>(ser);
         }
         return std::unique_ptr<Connection>();
@@ -68,14 +67,13 @@ public:
     virtual void start() override final
     {
         serial_enabled = true;
-        ser.lock();
         ser.begin(115200);
     }
 
     virtual void stop() override final
     {
+        ser.end();
         serial_enabled = false;
-        ser.unlock();
     }
 };
 
