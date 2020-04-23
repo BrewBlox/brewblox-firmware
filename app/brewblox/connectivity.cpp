@@ -99,33 +99,32 @@ d2h(uint8_t bin)
     return uint8_t(bin + (bin > 9 ? 'A' - 10 : '0'));
 }
 
-auto
+std::string
 deviceIdStringInit()
 {
-    std::string hex(24, '0');
+    std::string hex;
+    hex.reserve(25);
     uint8_t id[12];
     HAL_device_ID(id, 12);
-
-    uint8_t* pId = id;
-    auto hId = hex.begin();
-    while (hId < hex.end()) {
-        *hId++ = d2h(uint8_t(*pId & 0xF0) >> 4);
-        *hId++ = d2h(uint8_t(*pId++ & 0xF));
+    for (uint8_t i = 0; i < 12; i++) {
+        hex.push_back(d2h(uint8_t(id[i] & 0xF0) >> 4));
+        hex.push_back(d2h(uint8_t(id[i] & 0xF)));
     }
+    hex.push_back('\0'); // include null terminator so we can directly use data as c-style string
     return hex;
 }
 
-auto
+const std::string&
 deviceIdString()
 {
     static auto hexId = deviceIdStringInit();
     return hexId;
 }
 
-auto
+const uint8_t*
 deviceIdUint8Ptr()
 {
-    static auto hexId = deviceIdString().c_str();
+    static auto hexId = deviceIdString().data();
     return reinterpret_cast<const uint8_t*>(hexId);
 }
 
@@ -202,26 +201,25 @@ void
 initMdns()
 {
     auto mdns = theMdns();
-    bool success = mdns.addService("tcp", "http", 80, deviceIdString());
-    success = success && mdns.addService("tcp", "brewblox", 8332, deviceIdString());
-    if (success) {
-        auto hw = std::string("Spark ");
-        switch (getSparkVersion()) {
-        case SparkVersion::V1:
-            hw += "1";
-            break;
-        case SparkVersion::V2:
-            hw += "2";
-            break;
-        case SparkVersion::V3:
-            hw += "3";
-            break;
-        }
-        mdns.addTXTEntry("VERSION", stringify(GIT_VERSION));
-        mdns.addTXTEntry("ID", deviceIdString());
-        mdns.addTXTEntry("PLATFORM", stringify(PLATFORM_ID));
-        mdns.addTXTEntry("HW", hw);
+    mdns.addService("_tcp", "_http", "WEBPAGE", 80);
+    mdns.addService("_tcp", "_brewblox", "BREWBLOX", 8332);
+
+    std::string hw("Spark ");
+    switch (getSparkVersion()) {
+    case SparkVersion::V1:
+        hw += "1";
+        break;
+    case SparkVersion::V2:
+        hw += "2";
+        break;
+    case SparkVersion::V3:
+        hw += "3";
+        break;
     }
+    mdns.addTXTEntry("VERSION=" stringify(GIT_VERSION));
+    mdns.addTXTEntry(std::string("ID=") + deviceIdString());
+    mdns.addTXTEntry("PLATFORM=" stringify(PLATFORM_ID));
+    mdns.addTXTEntry(std::string("HW=") + hw);
 }
 
 void

@@ -1,10 +1,10 @@
 #ifndef _INCL_MDNS
 #define _INCL_MDNS
 
-#include "Buffer.h"
+// #include "Buffer.h"
 // #include "Label.h"
 #include "Record.h"
-#include "spark_wiring_udp.h"
+#include "UDPExtended.h"
 #include <map>
 #include <memory>
 #include <string>
@@ -19,11 +19,10 @@ class MDNS {
 public:
     MDNS(std::string hostname);
 
-    bool setHostname(std::string hostname);
+    void addService(std::string protocol, std::string serviceType, const std::string serviceName,
+                    uint16_t port, std::vector<std::string>&& subServices = std::vector<std::string>());
 
-    bool addService(std::string protocol, std::string service, uint16_t port, std::string instance, std::vector<std::string> subServices = {});
-
-    void addTXTEntry(std::string key, std::string value = "");
+    void addTXTEntry(std::string entry);
 
     bool begin(bool announce = false);
 
@@ -39,21 +38,37 @@ private:
         uint16_t arcount;
     };
 
-    UDP udp;
-    Buffer buffer;
+    struct Query {
+        Query()
+            : header{0}
+            , qtype{0}
+            , qclass{0}
+        {
+        }
+        ~Query() = default;
+        std::vector<std::string> qname;
+        QueryHeader header;
+        uint16_t qtype;
+        uint16_t qclass;
+    };
 
-    std::shared_ptr<PTRRecord> ROOT = std::make_shared<PTRRecord>(Label(""), true);
-    std::shared_ptr<PTRRecord> LOCAL = std::make_shared<PTRRecord>(Label("local", ROOT), true);
+    UDPExtended udp;
+
+    std::shared_ptr<MetaRecord> LOCAL;
     std::shared_ptr<ARecord> hostRecord;
     std::shared_ptr<TXTRecord> txtRecord;
     std::vector<std::shared_ptr<Record>> records;
-    std::string status = "Ok";
 
-    QueryHeader readHeader(Buffer& buffer);
-    void getResponses();
+    Query getQuery();
+
+    void processQuery(const Query& q);
     void writeResponses();
-    bool isAlphaDigitHyphen(std::string string);
-    bool isNetUnicode(std::string string);
+    //bool isAlphaDigitHyphen(std::string string);
+    //bool isNetUnicode(std::string string);
+
+    std::shared_ptr<Record> findRecord(std::vector<std::string>::const_iterator qname,
+                                       std::vector<std::string>::const_iterator qnameEnd,
+                                       uint16_t qtype, uint16_t qclass);
 };
 
 #endif

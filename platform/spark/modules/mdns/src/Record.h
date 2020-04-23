@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Buffer.h"
+#include "UDPExtended.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,32 +35,24 @@ class Record;
 
 class Label {
 public:
-    Label(std::string _name)
+    Label(std::string _name, std::shared_ptr<Record> _next = std::shared_ptr<Record>())
         : name(std::move(_name))
-        , next()
+        , next(std::move(_next))
+        , offset(0)
     {
-    }
-    Label(std::string _name, const std::shared_ptr<Record>& _next)
-        : name(std::move(_name))
-        , next(_next)
-    {
+        name.shrink_to_fit();
     }
 
-    void write(Buffer& buffer) const
-    {
-        buffer.writeUInt8(name.size());
-        for (const auto& c : name) {
-            buffer.writeUInt8(reinterpret_cast<const uint8_t&>(c));
-        }
-    }
-
+    void write(UDPExtended& udp) const;
     std::string name;
     std::shared_ptr<Record> next;
+    uint16_t offset; // offset in current query or answer
 };
 
 class Record {
 
 public:
+    Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
     void announceRecord();
 
     void setAnswerRecord();
@@ -73,19 +65,30 @@ public:
 
     void setKnownRecord();
 
-    void write(Buffer& buffer) const;
+    void write(UDPExtended& udp) const;
 
-    void writeLabel(Buffer& buffer) const;
+    void writeLabel(UDPExtended& udp) const;
     const Label& getLabel() const;
     void reset();
 
-protected:
-    Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
+    bool match(std::vector<std::string>::const_iterator nameBegin,
+               std::vector<std::string>::const_iterator nameEnd,
+               uint16_t qtype, uint16_t qclass) const;
 
-    virtual void writeSpecific(Buffer& buffer) const = 0;
+    virtual void matched(uint16_t qtype)
+    {
+        if (qtype == type || qtype == ANY_TYPE) {
+            setAnswerRecord();
+        } else {
+            setAdditionalRecord();
+        }
+    }
+
+protected:
+    virtual void writeSpecific(UDPExtended& udp) const = 0;
 
 private:
-    const Label label;
+    Label label;
     const uint16_t type;
     const uint16_t cls;
     const uint32_t ttl;
@@ -95,12 +98,18 @@ private:
     bool knownRecord = false;
 };
 
+class MetaRecord : public Record {
+
+public:
+    MetaRecord(Label label);
+    virtual void writeSpecific(UDPExtended& udp) const;
+};
+
 class ARecord : public Record {
 
 public:
     ARecord(Label label);
-
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class NSECRecord : public Record {
@@ -114,7 +123,7 @@ class HostNSECRecord : public NSECRecord {
 public:
     HostNSECRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class InstanceNSECRecord : public NSECRecord {
@@ -122,7 +131,7 @@ class InstanceNSECRecord : public NSECRecord {
 public:
     InstanceNSECRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class PTRRecord : public Record {
@@ -130,8 +139,16 @@ class PTRRecord : public Record {
 public:
     PTRRecord(Label label, bool meta = false);
 
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
     void setTargetRecord(std::shared_ptr<Record> target);
+
+    virtual void matched(uint16_t qtype) override final
+    {
+        Record::matched(qtype);
+        if (targetRecord) {
+            targetRecord->setAdditionalRecord();
+        }
+    }
 
 private:
     std::shared_ptr<Record> targetRecord;
@@ -142,10 +159,18 @@ class SRVRecord : public Record {
 public:
     SRVRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
 
     void setHostRecord(std::shared_ptr<Record> host);
     void setPort(uint16_t port);
+
+    virtual void matched(uint16_t qtype) override final
+    {
+        Record::matched(qtype);
+        if (hostRecord) {
+            hostRecord->setAdditionalRecord();
+        }
+    }
 
 private:
     std::shared_ptr<Record> hostRecord;
@@ -157,9 +182,9 @@ class TXTRecord : public Record {
 public:
     TXTRecord(Label label);
 
-    virtual void writeSpecific(Buffer& buffer) const;
+    virtual void writeSpecific(UDPExtended& udp) const;
 
-    void addEntry(std::string key, std::string value = "");
+    void addEntry(std::string entry);
 
 private:
     std::vector<std::string> data;
