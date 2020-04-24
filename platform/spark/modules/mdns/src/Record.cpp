@@ -81,9 +81,14 @@ bool
 Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<std::string>::const_iterator qnameEnd, uint16_t qtype, uint16_t qclass) const
 {
     // use qtype 0 as don't care
-    if ((!(qtype == type || qtype == ANY_TYPE)) || qclass != cls) {
+    if ((!(qtype == type || qtype == ANY_TYPE)) || (qclass != cls || qclass == 0 || cls == 0)) {
         return false;
     }
+    if (label.name.size() == 0 && label.next) {
+        // empty label that fully uses the label of another record
+        return label.next->match(qnameBegin, qnameEnd, ANY_TYPE, 0);
+    }
+
     if (qnameBegin->size() == label.name.size()) {
         if (qnameBegin->compare(label.name) == 0) {
             // matched this part of name, recursively check remainder
@@ -93,7 +98,7 @@ Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<s
                     return false; // query name is shorter than record name
                 }
                 // for next label we don't care about the qtype anymore
-                return label.next->match(qnameNext, qnameEnd, 0, qclass);
+                return label.next->match(qnameNext, qnameEnd, ANY_TYPE, 0);
             }
             return true;
         }

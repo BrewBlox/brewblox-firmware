@@ -131,8 +131,8 @@ deviceIdUint8Ptr()
 MDNS&
 theMdns()
 {
-    static MDNS theStaticMDNS(deviceIdString());
-    return theStaticMDNS;
+    static MDNS* theStaticMDNS = new MDNS(deviceIdString());
+    return *theStaticMDNS;
 }
 
 void
@@ -200,9 +200,9 @@ manageConnections(uint32_t now)
 void
 initMdns()
 {
-    auto mdns = theMdns();
-    mdns.addService("_tcp", "_http", "WEBPAGE", 80);
-    mdns.addService("_tcp", "_brewblox", "BREWBLOX", 8332);
+    MDNS& mdns = theMdns();
+    mdns.addService(MDNS::Protocol::TCP, "_http", "WEBPAGE", 80);
+    mdns.addService(MDNS::Protocol::TCP, "_brewblox", "BREWBLOX", 8332);
 
     std::string hw("Spark ");
     switch (getSparkVersion()) {

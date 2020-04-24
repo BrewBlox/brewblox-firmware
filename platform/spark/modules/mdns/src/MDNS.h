@@ -17,9 +17,14 @@
 
 class MDNS {
 public:
+    enum class Protocol {
+        UDP,
+        TCP,
+    };
+
     MDNS(std::string hostname);
 
-    void addService(std::string protocol, std::string serviceType, const std::string serviceName,
+    void addService(Protocol protocol, std::string serviceType, const std::string serviceName,
                     uint16_t port, std::vector<std::string>&& subServices = std::vector<std::string>());
 
     void addTXTEntry(std::string entry);
@@ -54,9 +59,17 @@ private:
 
     UDPExtended udp;
 
+    // meta records for re-using labels
     std::shared_ptr<MetaRecord> LOCAL;
+    std::shared_ptr<MetaRecord> UDP;
+    std::shared_ptr<MetaRecord> TCP;
+    std::shared_ptr<MetaRecord> DNSSD;
+    std::shared_ptr<MetaRecord> SERVICES;
+
+    // actual records
     std::shared_ptr<ARecord> hostRecord;
     std::shared_ptr<TXTRecord> txtRecord;
+
     std::vector<std::shared_ptr<Record>> records;
 
     Query getQuery();

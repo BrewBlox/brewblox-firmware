@@ -3,13 +3,16 @@
 #include <algorithm>
 #include <cctype> // for std::tolower
 #include <memory>
-#include <string>
 
 MDNS::MDNS(std::string hostname)
     : LOCAL(std::make_shared<MetaRecord>(Label(std::string{"local"})))
-    , hostRecord(std::make_shared<ARecord>(Label(std::move(hostname), this->LOCAL)))
-    , txtRecord(std::make_shared<TXTRecord>(Label(std::string(), this->hostRecord)))
-    , records{hostRecord, txtRecord, std::make_shared<HostNSECRecord>(Label(std::string(), this->hostRecord))}
+    , UDP(std::make_shared<MetaRecord>(Label(std::string{"_udp"}, LOCAL)))
+    , TCP(std::make_shared<MetaRecord>(Label(std::string{"_tcp"}, LOCAL)))
+    , DNSSD(std::make_shared<MetaRecord>(Label("_dns-sd", UDP)))
+    , SERVICES(std::make_shared<MetaRecord>(Label("_services", DNSSD)))
+    , hostRecord(std::make_shared<ARecord>(Label(std::move(hostname), LOCAL)))
+    , txtRecord(std::make_shared<TXTRecord>(Label(std::string(), hostRecord)))
+    , records{hostRecord, txtRecord, std::make_shared<HostNSECRecord>(Label(std::string(), hostRecord))}
 {
 }
 
@@ -30,23 +33,28 @@ MDNS::findRecord(std::vector<std::string>::const_iterator nameBegin,
 }
 
 void
-MDNS::addService(std::string protocol, std::string serviceType, std::string serviceName, uint16_t port, std::vector<std::string>&& subServices)
+MDNS::addService(Protocol protocol, std::string serviceType, std::string serviceName, uint16_t port, std::vector<std::string>&& subServices)
 {
     // labels as vector for looking up existing records
-    std::vector<std::string> lookup = {std::move(protocol), std::move(serviceType)};
+    // moving to prevent copy, so need to access from vector later
 
-    // a protocol meta record, just to hold the protocol name. Exising record is used if found
-    auto protocolRecord = findRecord(lookup.cbegin(), lookup.cbegin() + 1, 0, 0);
-    if (!protocolRecord) {
-        protocolRecord = std::make_shared<MetaRecord>(Label(lookup[0], LOCAL)); // create meta record for protocl
-        records.reserve(4 + subServices.size());
-        records.push_back(protocolRecord);
+    std::shared_ptr<Record> protocolRecord;
+    if (protocol == Protocol::TCP) {
+        protocolRecord = this->TCP;
+    } else if (protocol == Protocol::UDP) {
+        protocolRecord = this->UDP;
     } else {
-        records.reserve(3 + subServices.size());
+        return;
     }
+
+    // todo reserve vector space
 
     // A pointer record indicating where this service can be found
     auto servicePtrRecord = std::make_shared<PTRRecord>(Label(std::move(serviceType), protocolRecord));
+
+    // An enumeration record for DNS-SD
+    auto enumerationRecord = std::make_shared<PTRRecord>(Label(std::string(), this->SERVICES));
+    enumerationRecord->setTargetRecord(servicePtrRecord);
 
     // the service record indicating that a service of this type is available at PTR
     auto srvRecord = std::make_shared<SRVRecord>(Label(std::move(serviceName), servicePtrRecord));
@@ -63,6 +71,7 @@ MDNS::addService(std::string protocol, std::string serviceType, std::string serv
     // So we include an NSEC record with the same label as the service record
     records.push_back(std::move(std::make_shared<InstanceNSECRecord>(Label(std::string(), srvRecord))));
     records.push_back(std::move(srvRecord));
+    records.push_back(std::move(enumerationRecord));
     records.push_back(servicePtrRecord);
 
     if (!subServices.empty()) {
@@ -115,7 +124,9 @@ MDNS::processQueries()
     if (n > 0) {
         auto q = getQuery();
 
-        processQuery(q);
+        if (q.qname.size() > 0) {
+            processQuery(q);
+        }
 
         udp.flush_buffer();
 
@@ -143,25 +154,22 @@ MDNS::getQuery()
         while (count < q.header.qdcount && udp.available() > 4) {
             if (count == 0) { // only process first question for now
                 while (true) {
-                    uint8_t len = 0;
-                    udp.get(len);
-                    std::string subname;
-                    subname.reserve(len);
-                    char c = 0;
-                    while (len > 0 && udp.available() > 0) {
-                        udp.get(c);
-                        subname.push_back(std::tolower(c));
-                        len--;
-                    }
-                    if (subname.empty()) {
+                    uint8_t strlen = 0;
+                    udp.get(strlen);
+                    if (strlen) {
+                        std::string subname;
+                        subname.reserve(strlen);
+                        for (uint8_t len = 0; len < strlen && udp.available() > 0; len++) {
+                            char c = 0;
+                            udp.get(c);
+                            subname.push_back(std::tolower(c));
+                        }
+                        q.qname.push_back(std::move(subname));
+                    } else {
                         break;
                     }
-                    q.qname.push_back(std::move(subname));
                 }
-            } else {
-                while (true) {
-                    ; // whaaat?
-                }
+            } else { // TODO: handle multiple questions
             }
             count++;
         }
