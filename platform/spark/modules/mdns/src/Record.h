@@ -43,10 +43,17 @@ public:
         name.shrink_to_fit();
     }
 
+    void writeFull(UDPExtended& udp) const;
+    void writePtr(UDPExtended& udp) const;
+
     void write(UDPExtended& udp) const;
+    void reset()
+    {
+        offset = 0;
+    }
     std::string name;
     std::shared_ptr<Record> next;
-    uint16_t offset; // offset in current query or answer
+    mutable uint16_t offset; // offset in current query or answer
 };
 
 class Record {
@@ -68,6 +75,8 @@ public:
     void write(UDPExtended& udp) const;
 
     void writeLabel(UDPExtended& udp) const;
+
+    void writeLabelPtr(UDPExtended& udp) const;
     const Label& getLabel() const;
     void reset();
 

@@ -3,14 +3,36 @@
 #include <memory>
 #include <string>
 
+constexpr const uint16_t LABEL_PTR_MASK = 0xc000;
+
+void
+Label::writeFull(UDPExtended& udp) const
+{
+    // number of writes written so far is the offset, because no reads are since packet start
+    this->offset = udp.available();
+
+    udp.put(uint8_t(name.size()));
+    udp.put(name);
+    if (next) {
+        next->write(udp);
+    } else {
+        udp.put(uint8_t(0)); // write closing zero
+    }
+}
+
+void
+Label::writePtr(UDPExtended& udp) const
+{
+    udp.put(uint16_t(LABEL_PTR_MASK | this->offset));
+}
+
 void
 Label::write(UDPExtended& udp) const
 {
-    udp.put(name);
-    if (next) {
-        next->writeLabel(udp);
+    if (offset) {
+        writePtr(udp);
     } else {
-        udp.put(uint8_t(0)); // write closing zero
+        writeFull(udp);
     }
 }
 
@@ -68,6 +90,12 @@ Record::writeLabel(UDPExtended& udp) const
 }
 
 void
+Record::writeLabelPtr(UDPExtended& udp) const
+{
+    label.writePtr(udp);
+}
+
+void
 Record::write(UDPExtended& udp) const
 {
     writeLabel(udp);
@@ -80,8 +108,7 @@ Record::write(UDPExtended& udp) const
 bool
 Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<std::string>::const_iterator qnameEnd, uint16_t qtype, uint16_t qclass) const
 {
-    // use qtype 0 as don't care
-    if ((!(qtype == type || qtype == ANY_TYPE)) || (qclass != cls || qclass == 0 || cls == 0)) {
+    if (!(qtype == type || qtype == ANY_TYPE || type == ANY_TYPE) || (qclass != (cls & ~uint16_t(CACHE_FLUSH)))) {
         return false;
     }
     if (label.name.size() == 0 && label.next) {
@@ -98,7 +125,7 @@ Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<s
                     return false; // query name is shorter than record name
                 }
                 // for next label we don't care about the qtype anymore
-                return label.next->match(qnameNext, qnameEnd, ANY_TYPE, 0);
+                return label.next->match(qnameNext, qnameEnd, ANY_TYPE, qclass);
             }
             return true;
         }
@@ -109,7 +136,7 @@ Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<s
 void
 Record::reset()
 {
-    this->label.offset = 0;
+    this->label.reset();
     this->answerRecord = false;
     this->additionalRecord = false;
     this->knownRecord = false;
@@ -138,7 +165,7 @@ ARecord::writeSpecific(UDPExtended& udp) const
 }
 
 MetaRecord::MetaRecord(Label label)
-    : Record(std::move(label), 0, 0, 0, false)
+    : Record(std::move(label), ANY_TYPE, IN_CLASS, 0, false)
 {
 }
 
@@ -161,7 +188,7 @@ void
 HostNSECRecord::writeSpecific(UDPExtended& udp) const
 {
     udp.put(uint16_t(5));
-    writeLabel(udp);
+    writeLabelPtr(udp);
     udp.put(uint8_t(0));
     udp.put(uint8_t(1));
     udp.put(uint8_t(0x40));
@@ -176,7 +203,7 @@ void
 InstanceNSECRecord::writeSpecific(UDPExtended& udp) const
 {
     udp.put(uint16_t(9));
-    writeLabel(udp);
+    writeLabelPtr(udp);
     udp.put(uint8_t(0));
     udp.put(uint8_t(5));
     udp.put(uint8_t(0));
@@ -201,7 +228,9 @@ void
 PTRRecord::writeSpecific(UDPExtended& udp) const
 {
     if (targetRecord) {
-        targetRecord->writeLabel(udp);
+        targetRecord->writeLabelPtr(udp);
+    } else {
+        udp.put(LABEL_PTR_MASK); // write 0 ptr
     }
 }
 

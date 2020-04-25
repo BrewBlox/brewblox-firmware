@@ -50,17 +50,17 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     // todo reserve vector space
 
     // A pointer record indicating where this service can be found
-    auto servicePtrRecord = std::make_shared<PTRRecord>(Label(std::move(serviceType), protocolRecord));
+    auto serviceTypeRecord = std::make_shared<PTRRecord>(Label(std::move(serviceType), protocolRecord));
 
     // An enumeration record for DNS-SD
     auto enumerationRecord = std::make_shared<PTRRecord>(Label(std::string(), this->SERVICES));
-    enumerationRecord->setTargetRecord(servicePtrRecord);
+    enumerationRecord->setTargetRecord(serviceTypeRecord);
 
-    // the service record indicating that a service of this type is available at PTR
-    auto srvRecord = std::make_shared<SRVRecord>(Label(std::move(serviceName), servicePtrRecord));
-    servicePtrRecord->setTargetRecord(srvRecord);
-    srvRecord->setHostRecord(hostRecord);
-    srvRecord->setPort(port);
+    // the service record indicating under which name/port this service is available
+    auto serviceNameRecord = std::make_shared<SRVRecord>(Label(std::move(serviceName), serviceTypeRecord));
+    serviceTypeRecord->setTargetRecord(serviceNameRecord);
+    serviceNameRecord->setHostRecord(hostRecord);
+    serviceNameRecord->setPort(port);
 
     // From RFC6762:
     //    On receipt of a question for a particular name, rrtype, and rrclass,
@@ -69,17 +69,17 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     //    Section indicating the nonexistence of other rrtypes for that name
     //    and rrclass.
     // So we include an NSEC record with the same label as the service record
-    records.push_back(std::move(std::make_shared<InstanceNSECRecord>(Label(std::string(), srvRecord))));
-    records.push_back(std::move(srvRecord));
+    records.push_back(std::move(std::make_shared<InstanceNSECRecord>(Label(std::string(), serviceNameRecord))));
+    records.push_back(std::move(serviceNameRecord));
     records.push_back(std::move(enumerationRecord));
-    records.push_back(servicePtrRecord);
+    records.push_back(serviceTypeRecord);
 
     if (!subServices.empty()) {
         auto subMetaRecord = std::make_shared<PTRRecord>(Label(std::string("_sub"), hostRecord), false); // meta record to hold _sub
 
         for (auto&& s : subServices) {
             auto subPTRRecord = std::make_shared<PTRRecord>(Label(std::move(s), subMetaRecord));
-            subPTRRecord->setTargetRecord(servicePtrRecord);
+            subPTRRecord->setTargetRecord(serviceTypeRecord);
             records.push_back(std::move(subPTRRecord));
         }
     }

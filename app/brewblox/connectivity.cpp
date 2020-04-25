@@ -140,7 +140,7 @@ manageConnections(uint32_t now)
 {
     static uint32_t lastConnect = 0;
     static uint32_t lastAnnounce = 0;
-    if (wifiIsConnected) {
+    if (spark::WiFi.ready()) {
         if ((!mdns_started) || ((now - lastAnnounce) > 300000)) {
             // explicit announce every 5 minutes
             mdns_started = theMdns().begin(true);
@@ -201,8 +201,8 @@ void
 initMdns()
 {
     MDNS& mdns = theMdns();
-    mdns.addService(MDNS::Protocol::TCP, "_http", "WEBPAGE", 80);
-    mdns.addService(MDNS::Protocol::TCP, "_brewblox", "BREWBLOX", 8332);
+    mdns.addService(MDNS::Protocol::TCP, "_http", deviceIdString(), 80);
+    mdns.addService(MDNS::Protocol::TCP, "_brewblox", deviceIdString(), 8332);
 
     std::string hw("Spark ");
     switch (getSparkVersion()) {
