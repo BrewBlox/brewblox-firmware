@@ -202,24 +202,25 @@ initMdns()
 {
     MDNS& mdns = theMdns();
     mdns.addService(MDNS::Protocol::TCP, "_http", deviceIdString(), 80);
-    mdns.addService(MDNS::Protocol::TCP, "_brewblox", deviceIdString(), 8332);
 
-    std::string hw("Spark ");
+    std::string hwEntry("HW=Spark ");
     switch (getSparkVersion()) {
     case SparkVersion::V1:
-        hw += "1";
+        hwEntry += "1";
         break;
     case SparkVersion::V2:
-        hw += "2";
+        hwEntry += "2";
         break;
     case SparkVersion::V3:
-        hw += "3";
+        hwEntry += "3";
         break;
     }
-    mdns.addTXTEntry("VERSION=" stringify(GIT_VERSION));
-    mdns.addTXTEntry(std::string("ID=") + deviceIdString());
-    mdns.addTXTEntry("PLATFORM=" stringify(PLATFORM_ID));
-    mdns.addTXTEntry(std::string("HW=") + hw);
+
+    mdns.addService(MDNS::Protocol::TCP, "_brewblox", deviceIdString(), 8332,
+                    {"VERSION=" stringify(GIT_VERSION),
+                     std::string("ID=") + deviceIdString(),
+                     "PLATFORM=" stringify(PLATFORM_ID),
+                     hwEntry});
 }
 
 void

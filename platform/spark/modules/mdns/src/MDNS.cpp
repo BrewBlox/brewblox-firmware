@@ -11,8 +11,8 @@ MDNS::MDNS(std::string hostname)
     , DNSSD(std::make_shared<MetaRecord>(Label("_dns-sd", UDP)))
     , SERVICES(std::make_shared<MetaRecord>(Label("_services", DNSSD)))
     , hostRecord(std::make_shared<ARecord>(Label(std::move(hostname), LOCAL)))
-    , txtRecord(std::make_shared<TXTRecord>(Label(std::string(), hostRecord)))
-    , records{hostRecord, txtRecord, std::make_shared<HostNSECRecord>(Label(std::string(), hostRecord))}
+    , records{hostRecord, std::make_shared<HostNSECRecord>(Label(std::string()))}
+    , metaRecords{LOCAL, UDP, TCP, DNSSD, SERVICES}
 {
 }
 
@@ -33,11 +33,10 @@ MDNS::findRecord(std::vector<std::string>::const_iterator nameBegin,
 }
 
 void
-MDNS::addService(Protocol protocol, std::string serviceType, std::string serviceName, uint16_t port, std::vector<std::string>&& subServices)
+MDNS::addService(Protocol protocol, std::string serviceType, std::string serviceName, uint16_t port,
+                 std::vector<std::string>&& txtEntries,
+                 std::vector<std::string>&& subServices)
 {
-    // labels as vector for looking up existing records
-    // moving to prevent copy, so need to access from vector later
-
     std::shared_ptr<Record> protocolRecord;
     if (protocol == Protocol::TCP) {
         protocolRecord = this->TCP;
@@ -50,17 +49,19 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     // todo reserve vector space
 
     // A pointer record indicating where this service can be found
-    auto serviceTypeRecord = std::make_shared<PTRRecord>(Label(std::move(serviceType), protocolRecord));
+    auto ptrRecord = std::make_shared<PTRRecord>(Label(std::move(serviceType), protocolRecord));
 
     // An enumeration record for DNS-SD
     auto enumerationRecord = std::make_shared<PTRRecord>(Label(std::string(), this->SERVICES));
-    enumerationRecord->setTargetRecord(serviceTypeRecord);
+    enumerationRecord->setTargetRecord(ptrRecord);
 
     // the service record indicating under which name/port this service is available
-    auto serviceNameRecord = std::make_shared<SRVRecord>(Label(std::move(serviceName), serviceTypeRecord));
-    serviceTypeRecord->setTargetRecord(serviceNameRecord);
-    serviceNameRecord->setHostRecord(hostRecord);
-    serviceNameRecord->setPort(port);
+    auto srvRecord = std::make_shared<SRVRecord>(Label(std::move(serviceName), ptrRecord));
+    ptrRecord->setTargetRecord(srvRecord);
+    srvRecord->setHostRecord(hostRecord);
+    srvRecord->setPort(port);
+
+    auto txtRecord = std::make_shared<TXTRecord>(Label(std::string(), srvRecord), std::move(txtEntries));
 
     // From RFC6762:
     //    On receipt of a question for a particular name, rrtype, and rrclass,
@@ -69,26 +70,21 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     //    Section indicating the nonexistence of other rrtypes for that name
     //    and rrclass.
     // So we include an NSEC record with the same label as the service record
-    records.push_back(std::move(std::make_shared<InstanceNSECRecord>(Label(std::string(), serviceNameRecord))));
-    records.push_back(std::move(serviceNameRecord));
+    records.push_back(ptrRecord);
+    records.push_back(std::move(srvRecord));
+    records.push_back(std::move(txtRecord));
+    records.push_back(std::move(std::make_shared<ServiceNSECRecord>(Label(std::string(), srvRecord))));
     records.push_back(std::move(enumerationRecord));
-    records.push_back(serviceTypeRecord);
 
     if (!subServices.empty()) {
         auto subMetaRecord = std::make_shared<PTRRecord>(Label(std::string("_sub"), hostRecord), false); // meta record to hold _sub
 
         for (auto&& s : subServices) {
             auto subPTRRecord = std::make_shared<PTRRecord>(Label(std::move(s), subMetaRecord));
-            subPTRRecord->setTargetRecord(serviceTypeRecord);
+            subPTRRecord->setTargetRecord(ptrRecord);
             records.push_back(std::move(subPTRRecord));
         }
     }
-}
-
-void
-MDNS::addTXTEntry(std::string entry)
-{
-    txtRecord->addEntry(std::move(entry));
 }
 
 bool
@@ -198,6 +194,10 @@ MDNS::writeResponses()
     uint8_t answerCount = 0;
     uint8_t additionalCount = 0;
 
+    for (auto& r : metaRecords) {
+        r->resetLabelOffset();
+    }
+
     for (auto& r : records) {
         if (r->isAnswerRecord()) {
             answerCount++;
@@ -205,6 +205,7 @@ MDNS::writeResponses()
         if (r->isAdditionalRecord()) {
             additionalCount++;
         }
+        r->resetLabelOffset();
     }
 
     if (answerCount > 0) {

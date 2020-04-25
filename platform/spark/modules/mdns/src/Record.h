@@ -79,19 +79,13 @@ public:
     void writeLabelPtr(UDPExtended& udp) const;
     const Label& getLabel() const;
     void reset();
+    void resetLabelOffset();
 
     bool match(std::vector<std::string>::const_iterator nameBegin,
                std::vector<std::string>::const_iterator nameEnd,
                uint16_t qtype, uint16_t qclass) const;
 
-    virtual void matched(uint16_t qtype)
-    {
-        if (qtype == type || qtype == ANY_TYPE) {
-            setAnswerRecord();
-        } else {
-            setAdditionalRecord();
-        }
-    }
+    virtual void matched(uint16_t qtype) = 0;
 
 protected:
     virtual void writeSpecific(UDPExtended& udp) const = 0;
@@ -111,19 +105,19 @@ class MetaRecord : public Record {
 
 public:
     MetaRecord(Label label);
-    virtual void writeSpecific(UDPExtended& udp) const;
-};
-
-class ARecord : public Record {
-
-public:
-    ARecord(Label label);
+    void matched(uint16_t qtype) override final
+    {
+    }
     virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class NSECRecord : public Record {
 
 public:
+    // added to response by other records
+    void matched(uint16_t qtype) override final
+    {
+    }
     NSECRecord(Label label);
 };
 
@@ -135,10 +129,32 @@ public:
     virtual void writeSpecific(UDPExtended& udp) const;
 };
 
-class InstanceNSECRecord : public NSECRecord {
+class ARecord : public Record {
 
 public:
-    InstanceNSECRecord(Label label);
+    ARecord(Label label);
+    virtual void writeSpecific(UDPExtended& udp) const;
+
+    void matched(uint16_t qtype) override
+    {
+        switch (qtype) {
+        case A_TYPE:
+        case ANY_TYPE:
+            this->setAnswerRecord();
+            this->nsecRecord->setAdditionalRecord();
+            break;
+
+        default:
+            this->nsecRecord->setAnswerRecord();
+        }
+    }
+    std::shared_ptr<HostNSECRecord> nsecRecord;
+};
+
+class ServiceNSECRecord : public NSECRecord {
+
+public:
+    ServiceNSECRecord(Label label);
 
     virtual void writeSpecific(UDPExtended& udp) const;
 };
@@ -153,8 +169,8 @@ public:
 
     virtual void matched(uint16_t qtype) override final
     {
-        Record::matched(qtype);
-        if (targetRecord) {
+        if (qtype == PTR_TYPE || qtype == ANY_TYPE) {
+            this->setAnswerRecord();
             targetRecord->setAdditionalRecord();
         }
     }
@@ -172,13 +188,10 @@ public:
 
     void setHostRecord(std::shared_ptr<Record> host);
     void setPort(uint16_t port);
-
     virtual void matched(uint16_t qtype) override final
     {
-        Record::matched(qtype);
-        if (hostRecord) {
-            hostRecord->setAdditionalRecord();
-        }
+        hostRecord->setAnswerRecord();
+        this->setAdditionalRecord();
     }
 
 private:
@@ -189,11 +202,13 @@ private:
 class TXTRecord : public Record {
 
 public:
-    TXTRecord(Label label);
+    TXTRecord(Label label, std::vector<std::string> entries);
 
     virtual void writeSpecific(UDPExtended& udp) const;
-
-    void addEntry(std::string entry);
+    virtual void matched(uint16_t qtype) override final
+    {
+        this->setAdditionalRecord();
+    }
 
 private:
     std::vector<std::string> data;

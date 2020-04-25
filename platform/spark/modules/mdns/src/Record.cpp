@@ -9,7 +9,7 @@ void
 Label::writeFull(UDPExtended& udp) const
 {
     // number of writes written so far is the offset, because no reads are since packet start
-    this->offset = udp.available();
+    this->offset = udp.writeOffset();
 
     udp.put(uint8_t(name.size()));
     udp.put(name);
@@ -134,6 +134,12 @@ Record::match(std::vector<std::string>::const_iterator qnameBegin, std::vector<s
 }
 
 void
+Record::resetLabelOffset()
+{
+    this->label.reset();
+}
+
+void
 Record::reset()
 {
     this->label.reset();
@@ -194,13 +200,13 @@ HostNSECRecord::writeSpecific(UDPExtended& udp) const
     udp.put(uint8_t(0x40));
 }
 
-InstanceNSECRecord::InstanceNSECRecord(Label label)
+ServiceNSECRecord::ServiceNSECRecord(Label label)
     : NSECRecord(std::move(label))
 {
 }
 
 void
-InstanceNSECRecord::writeSpecific(UDPExtended& udp) const
+ServiceNSECRecord::writeSpecific(UDPExtended& udp) const
 {
     udp.put(uint16_t(9));
     writeLabelPtr(udp);
@@ -267,16 +273,10 @@ SRVRecord::setPort(uint16_t port)
     this->port = port;
 }
 
-TXTRecord::TXTRecord(Label label)
+TXTRecord::TXTRecord(Label label, std::vector<std::string> entries)
     : Record(std::move(label), TXT_TYPE, IN_CLASS | CACHE_FLUSH, TTL_75MIN)
+    , data(std::move(entries))
 {
-}
-
-void
-TXTRecord::addEntry(std::string entry)
-{
-    entry.shrink_to_fit();
-    data.push_back(std::move(entry));
 }
 
 void

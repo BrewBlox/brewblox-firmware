@@ -24,10 +24,9 @@ public:
 
     MDNS(std::string hostname);
 
-    void addService(Protocol protocol, std::string serviceType, const std::string serviceName,
-                    uint16_t port, std::vector<std::string>&& subServices = std::vector<std::string>());
-
-    void addTXTEntry(std::string entry);
+    void addService(Protocol protocol, std::string serviceType, const std::string serviceName, uint16_t port,
+                    std::vector<std::string>&& txtEntries = std::vector<std::string>(),
+                    std::vector<std::string>&& subServices = std::vector<std::string>());
 
     bool begin(bool announce = false);
 
@@ -68,9 +67,8 @@ private:
 
     // actual records
     std::shared_ptr<ARecord> hostRecord;
-    std::shared_ptr<TXTRecord> txtRecord;
-
     std::vector<std::shared_ptr<Record>> records;
+    std::vector<std::shared_ptr<MetaRecord>> metaRecords;
 
     Query getQuery();
 
