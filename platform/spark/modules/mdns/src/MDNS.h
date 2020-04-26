@@ -1,6 +1,4 @@
-#ifndef _INCL_MDNS
-#define _INCL_MDNS
-
+#pragma once
 // #include "Buffer.h"
 // #include "Label.h"
 #include "Record.h"
@@ -23,6 +21,15 @@ public:
     };
 
     MDNS(std::string hostname);
+    ~MDNS()
+    {
+        for (auto r : records) {
+            delete r;
+        }
+        for (auto r : metaRecords) {
+            delete r;
+        }
+    }
 
     void addService(Protocol protocol, std::string serviceType, const std::string serviceName, uint16_t port,
                     std::vector<std::string>&& txtEntries = std::vector<std::string>(),
@@ -59,16 +66,18 @@ private:
     UDPExtended udp;
 
     // meta records for re-using labels
-    std::shared_ptr<MetaRecord> LOCAL;
-    std::shared_ptr<MetaRecord> UDP;
-    std::shared_ptr<MetaRecord> TCP;
-    std::shared_ptr<MetaRecord> DNSSD;
-    std::shared_ptr<MetaRecord> SERVICES;
+    MetaRecord* LOCAL;
+    MetaRecord* UDP;
+    MetaRecord* TCP;
+    MetaRecord* DNSSD;
+    MetaRecord* SERVICES;
 
-    // actual records
-    std::shared_ptr<ARecord> hostRecord;
-    std::vector<std::shared_ptr<Record>> records;
-    std::vector<std::shared_ptr<MetaRecord>> metaRecords;
+    // actual records that are checked
+    ARecord* hostRecord;
+
+    // vectors of records to iterate over them
+    std::vector<Record*> records;
+    std::vector<MetaRecord*> metaRecords;
 
     Query getQuery();
 
@@ -81,5 +90,3 @@ private:
                                        std::vector<std::string>::const_iterator qnameEnd,
                                        uint16_t qtype, uint16_t qclass);
 };
-
-#endif

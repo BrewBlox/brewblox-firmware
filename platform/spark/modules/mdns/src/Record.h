@@ -35,13 +35,14 @@ class Record;
 
 class Label {
 public:
-    Label(std::string _name, std::shared_ptr<Record> _next = std::shared_ptr<Record>())
+    Label(std::string _name, Record* _next)
         : name(std::move(_name))
-        , next(std::move(_next))
+        , next(_next)
         , offset(0)
     {
         name.shrink_to_fit();
     }
+    ~Label() = default;
 
     void writeFull(UDPExtended& udp) const;
     void writePtr(UDPExtended& udp) const;
@@ -52,7 +53,7 @@ public:
         offset = 0;
     }
     std::string name;
-    std::shared_ptr<Record> next;
+    Record* next;
     mutable uint16_t offset; // offset in current query or answer
 };
 
@@ -60,6 +61,7 @@ class Record {
 
 public:
     Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
+    virtual ~Record() = default;
     void announceRecord();
 
     void setAnswerRecord();
@@ -148,7 +150,7 @@ public:
             this->nsecRecord->setAnswerRecord();
         }
     }
-    std::shared_ptr<HostNSECRecord> nsecRecord;
+    Record* nsecRecord = nullptr;
 };
 
 class ServiceNSECRecord : public NSECRecord {
@@ -165,7 +167,7 @@ public:
     PTRRecord(Label label, bool meta = false);
 
     virtual void writeSpecific(UDPExtended& udp) const;
-    void setTargetRecord(std::shared_ptr<Record> target);
+    void setTargetRecord(Record* target);
 
     virtual void matched(uint16_t qtype) override final
     {
@@ -176,7 +178,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Record> targetRecord;
+    Record* targetRecord;
 };
 
 class SRVRecord : public Record {
@@ -186,7 +188,7 @@ public:
 
     virtual void writeSpecific(UDPExtended& udp) const;
 
-    void setHostRecord(std::shared_ptr<Record> host);
+    void setHostRecord(Record* host);
     void setPort(uint16_t port);
     virtual void matched(uint16_t qtype) override final
     {
@@ -195,7 +197,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Record> hostRecord;
+    Record* hostRecord = nullptr;
     uint16_t port;
 };
 

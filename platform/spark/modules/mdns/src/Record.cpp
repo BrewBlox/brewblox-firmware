@@ -225,7 +225,7 @@ PTRRecord::PTRRecord(Label label, bool meta)
 }
 
 void
-PTRRecord::setTargetRecord(std::shared_ptr<Record> target)
+PTRRecord::setTargetRecord(Record* target)
 {
     targetRecord = std::move(target);
 }
@@ -262,7 +262,7 @@ SRVRecord::writeSpecific(UDPExtended& udp) const
 }
 
 void
-SRVRecord::setHostRecord(std::shared_ptr<Record> host)
+SRVRecord::setHostRecord(Record* host)
 {
     hostRecord = std::move(host);
 }
