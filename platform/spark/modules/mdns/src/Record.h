@@ -19,8 +19,6 @@
 #define TTL_2MIN 120
 #define TTL_75MIN 4500
 
-#define IP_SIZE 4
-
 #define DOT '.'
 
 #define END_OF_NAME 0x0
@@ -46,6 +44,7 @@ public:
 
     void writeFull(UDPExtended& udp) const;
     void writePtr(UDPExtended& udp) const;
+    uint16_t writeSize() const;
 
     void write(UDPExtended& udp) const;
     void reset()
@@ -78,7 +77,6 @@ public:
 
     void writeLabel(UDPExtended& udp) const;
 
-    void writeLabelPtr(UDPExtended& udp) const;
     const Label& getLabel() const;
     void reset();
     void resetLabelOffset();
@@ -91,8 +89,6 @@ public:
 
 protected:
     virtual void writeSpecific(UDPExtended& udp) const = 0;
-
-private:
     Label label;
     const uint16_t type;
     const uint16_t cls;
@@ -109,48 +105,43 @@ public:
     MetaRecord(Label label);
     void matched(uint16_t qtype) override final
     {
+        // meta records are only used for labels and should not be sent in a response
     }
     virtual void writeSpecific(UDPExtended& udp) const;
 };
 
-class NSECRecord : public Record {
-
+class HostNSECRecord;
+class ARecord : public Record {
 public:
-    // added to response by other records
-    void matched(uint16_t qtype) override final
+    ARecord(Label label);
+    virtual void writeSpecific(UDPExtended& udp) const;
+
+    void matched(uint16_t qtype) override final;
+
+    void setNsecRecord(HostNSECRecord* nsec)
     {
+        nsecRecord = nsec;
     }
+
+    HostNSECRecord* nsecRecord;
+};
+
+class NSECRecord : public Record {
+public:
     NSECRecord(Label label);
 };
 
 class HostNSECRecord : public NSECRecord {
 
 public:
-    HostNSECRecord(Label label);
+    HostNSECRecord(Label label, ARecord* hostRecord);
 
-    virtual void writeSpecific(UDPExtended& udp) const;
-};
-
-class ARecord : public Record {
-
-public:
-    ARecord(Label label);
-    virtual void writeSpecific(UDPExtended& udp) const;
-
-    void matched(uint16_t qtype) override
+    void matched(uint16_t qtype) override final
     {
-        switch (qtype) {
-        case A_TYPE:
-        case ANY_TYPE:
-            this->setAnswerRecord();
-            this->nsecRecord->setAdditionalRecord();
-            break;
-
-        default:
-            this->nsecRecord->setAnswerRecord();
-        }
+        this->setAdditionalRecord();
     }
-    Record* nsecRecord = nullptr;
+
+    virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class ServiceNSECRecord : public NSECRecord {
@@ -158,47 +149,26 @@ class ServiceNSECRecord : public NSECRecord {
 public:
     ServiceNSECRecord(Label label);
 
+    void matched(uint16_t qtype) override final
+    {
+        // added to response by SRV record
+    }
+
     virtual void writeSpecific(UDPExtended& udp) const;
 };
 
 class PTRRecord : public Record {
 
 public:
-    PTRRecord(Label label, bool meta = false);
+    PTRRecord(Label label);
 
     virtual void writeSpecific(UDPExtended& udp) const;
     void setTargetRecord(Record* target);
 
-    virtual void matched(uint16_t qtype) override final
-    {
-        if (qtype == PTR_TYPE || qtype == ANY_TYPE) {
-            this->setAnswerRecord();
-            targetRecord->setAdditionalRecord();
-        }
-    }
+    virtual void matched(uint16_t qtype) override final;
 
 private:
     Record* targetRecord;
-};
-
-class SRVRecord : public Record {
-
-public:
-    SRVRecord(Label label);
-
-    virtual void writeSpecific(UDPExtended& udp) const;
-
-    void setHostRecord(Record* host);
-    void setPort(uint16_t port);
-    virtual void matched(uint16_t qtype) override final
-    {
-        hostRecord->setAnswerRecord();
-        this->setAdditionalRecord();
-    }
-
-private:
-    Record* hostRecord = nullptr;
-    uint16_t port;
 };
 
 class TXTRecord : public Record {
@@ -209,9 +179,75 @@ public:
     virtual void writeSpecific(UDPExtended& udp) const;
     virtual void matched(uint16_t qtype) override final
     {
-        this->setAdditionalRecord();
+        // will be included by SRV record
     }
 
 private:
     std::vector<std::string> data;
+};
+
+class SRVRecord : public Record {
+
+public:
+    SRVRecord(Label label, uint16_t port, PTRRecord* ptr, ARecord* a);
+
+    virtual void writeSpecific(UDPExtended& udp) const;
+
+    void setHostRecord(Record* host);
+    void setPort(uint16_t port);
+    virtual void matched(uint16_t qtype) override final
+    {
+        switch (qtype) {
+        case PTR_TYPE:
+        case ANY_TYPE:
+            ptrRecord->setAnswerRecord();
+            this->setAdditionalRecord();
+            if (txtRecord) {
+                txtRecord->setAdditionalRecord();
+            }
+            aRecord->setAdditionalRecord();
+            aRecord->nsecRecord->setAdditionalRecord();
+            break;
+        case SRV_TYPE:
+            this->setAnswerRecord();
+            ptrRecord->setAdditionalRecord();
+            if (txtRecord) {
+                txtRecord->setAdditionalRecord();
+            }
+            aRecord->setAdditionalRecord();
+            aRecord->nsecRecord->setAdditionalRecord();
+            break;
+        case TXT_TYPE:
+            if (txtRecord) {
+                txtRecord->setAnswerRecord();
+                this->setAdditionalRecord();
+                ptrRecord->setAdditionalRecord();
+                aRecord->setAdditionalRecord();
+                aRecord->nsecRecord->setAdditionalRecord();
+            }
+            break;
+        default:
+            if (nsecRecord) {
+                nsecRecord->setAnswerRecord();
+            }
+        }
+    }
+
+    // TXT and NSEC record will use use this record for their label, so need to be set after construction
+    void setTxtRecord(TXTRecord* txt)
+    {
+        this->txtRecord = txt;
+    }
+
+    void setNsecRecord(ServiceNSECRecord* nsec)
+    {
+        this->nsecRecord = nsec;
+    }
+
+private:
+    uint16_t port;
+    PTRRecord* ptrRecord;
+    TXTRecord* txtRecord;
+    ServiceNSECRecord* nsecRecord;
+    ARecord* aRecord;
 };

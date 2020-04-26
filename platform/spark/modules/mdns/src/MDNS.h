@@ -83,10 +83,4 @@ private:
 
     void processQuery(const Query& q);
     void writeResponses();
-    //bool isAlphaDigitHyphen(std::string string);
-    //bool isNetUnicode(std::string string);
-
-    std::shared_ptr<Record> findRecord(std::vector<std::string>::const_iterator qname,
-                                       std::vector<std::string>::const_iterator qnameEnd,
-                                       uint16_t qtype, uint16_t qclass);
 };

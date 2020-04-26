@@ -110,7 +110,6 @@ deviceIdStringInit()
         hex.push_back(d2h(uint8_t(id[i] & 0xF0) >> 4));
         hex.push_back(d2h(uint8_t(id[i] & 0xF)));
     }
-    hex.push_back('\0'); // include null terminator so we can directly use data as c-style string
     return hex;
 }
 
@@ -119,13 +118,6 @@ deviceIdString()
 {
     static auto hexId = deviceIdStringInit();
     return hexId;
-}
-
-const uint8_t*
-deviceIdUint8Ptr()
-{
-    static auto hexId = deviceIdString().data();
-    return reinterpret_cast<const uint8_t*>(hexId);
 }
 
 MDNS&
@@ -167,7 +159,7 @@ manageConnections(uint32_t now)
 
                 client.write(start, sizeof(start), 0);
                 if (!client.getWriteError()) {
-                    client.write(deviceIdUint8Ptr(), 24, 0);
+                    client.write(reinterpret_cast<const uint8_t*>(deviceIdString().data()), 24, 0);
                 }
                 if (!client.getWriteError()) {
                     client.write(end, sizeof(end), 0);

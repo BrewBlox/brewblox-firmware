@@ -11,27 +11,11 @@ MDNS::MDNS(std::string hostname)
     , DNSSD(new MetaRecord(Label("_dns-sd", UDP)))
     , SERVICES(new MetaRecord(Label("_services", DNSSD)))
     , hostRecord(new ARecord(Label(std::move(hostname), LOCAL)))
-    , records{hostRecord, new HostNSECRecord(Label(std::string(), hostRecord))}
+    , records{hostRecord, new HostNSECRecord(Label(std::string(), hostRecord), hostRecord)}
     , metaRecords{LOCAL, UDP, TCP, DNSSD, SERVICES}
 {
 }
-/*
-Record*
-MDNS::findRecord(std::vector<std::string>::const_iterator nameBegin,
-                 std::vector<std::string>::const_iterator nameEnd,
-                 uint16_t qtype, uint16_t qclass)
-{
-    auto begin = records.cbegin();
-    auto end = records.cend();
-    auto record = std::find_if(begin, end, [&nameBegin, &nameEnd, &qtype, &qclass](const std::shared_ptr<Record>& r) {
-        return r->match(nameBegin, nameEnd, qtype, qclass);
-    });
-    if (record != end) {
-        return *record;
-    }
-    return std::shared_ptr<Record>();
-}
-*/
+
 void
 MDNS::addService(Protocol protocol, std::string serviceType, std::string serviceName, uint16_t port,
                  std::vector<std::string>&& txtEntries,
@@ -56,13 +40,30 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     enumerationRecord->setTargetRecord(ptrRecord);
 
     // the service record indicating under which name/port this service is available
-    auto srvRecord = new SRVRecord(Label(std::move(serviceName), ptrRecord));
+    auto srvRecord = new SRVRecord(Label(std::move(serviceName), ptrRecord), port, ptrRecord, hostRecord);
     ptrRecord->setTargetRecord(srvRecord);
-    srvRecord->setHostRecord(hostRecord);
-    srvRecord->setPort(port);
 
+    // RFC 6763 says:
+    //    An empty TXT record containing zero strings is not allowed [RFC1035].
+    //    DNS-SD implementations MUST NOT emit empty TXT records.  DNS-SD
+    //    clients MUST treat the following as equivalent:
+    //    o  A TXT record containing a single zero byte.
+    //       (i.e., a single empty string.)
+    //    o  An empty (zero-length) TXT record.
+    //       (This is not strictly legal, but should one be received, it should
+    //       be interpreted as the same as a single empty string.)
+    //    o  No TXT record.
+    //       (i.e., an NXDOMAIN or no-error-no-answer response.)
+    //    o  A TXT record containing a single zero byte.
+    //       (i.e., a single empty string.)RFC 6763
+    if (txtEntries.empty()) {
+        txtEntries.push_back("");
+    }
     auto txtRecord = new TXTRecord(Label(std::string(), srvRecord), std::move(txtEntries));
+
     auto nsecRecord = new ServiceNSECRecord(Label(std::string(), srvRecord));
+    srvRecord->setTxtRecord(txtRecord);
+    srvRecord->setNsecRecord(nsecRecord);
 
     // From RFC6762:
     //    On receipt of a question for a particular name, rrtype, and rrclass,
@@ -78,7 +79,7 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     records.push_back(enumerationRecord);
 
     if (!subServices.empty()) {
-        auto subMetaRecord = new PTRRecord(Label(std::string("_sub"), hostRecord), false); // meta record to hold _sub
+        auto subMetaRecord = new MetaRecord(Label(std::string("_sub"), ptrRecord)); // meta record to hold _sub
 
         for (auto&& s : subServices) {
             auto subPTRRecord = new PTRRecord(Label(std::move(s), subMetaRecord));
