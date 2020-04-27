@@ -11,7 +11,7 @@ MDNS::MDNS(std::string hostname)
     , DNSSD(new MetaRecord(Label("_dns-sd", UDP)))
     , SERVICES(new MetaRecord(Label("_services", DNSSD)))
     , hostRecord(new ARecord(Label(std::move(hostname), LOCAL)))
-    , records{hostRecord, new HostNSECRecord(Label(std::string(), hostRecord), hostRecord)}
+    , records{hostRecord, new HostNSECRecord(Label(hostRecord), hostRecord)}
     , metaRecords{LOCAL, UDP, TCP, DNSSD, SERVICES}
 {
 }
@@ -30,13 +30,13 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
         return;
     }
 
-    // todo reserve vector space
+    records.reserve(records.size() + 5 + subServices.size());
 
     // A pointer record indicating where this service can be found
     auto ptrRecord = new PTRRecord(Label(std::move(serviceType), protocolRecord));
 
     // An enumeration record for DNS-SD
-    auto enumerationRecord = new PTRRecord(Label(std::string(), this->SERVICES), false);
+    auto enumerationRecord = new PTRRecord(Label(this->SERVICES), false);
     enumerationRecord->setTargetRecord(ptrRecord);
 
     // the service record indicating under which name/port this service is available
@@ -59,9 +59,9 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     if (txtEntries.empty()) {
         txtEntries.push_back("");
     }
-    auto txtRecord = new TXTRecord(Label(std::string(), srvRecord), std::move(txtEntries));
+    auto txtRecord = new TXTRecord(Label(srvRecord), std::move(txtEntries));
 
-    auto nsecRecord = new ServiceNSECRecord(Label(std::string(), srvRecord));
+    auto nsecRecord = new ServiceNSECRecord(Label(srvRecord));
     srvRecord->setTxtRecord(txtRecord);
     srvRecord->setNsecRecord(nsecRecord);
 
@@ -79,12 +79,14 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     records.push_back(enumerationRecord);
 
     if (!subServices.empty()) {
-        auto subMetaRecord = new MetaRecord(Label(std::string("_sub"), ptrRecord)); // meta record to hold _sub
+        // create meta record to hold _sub prefix
+        auto subMetaRecord = new MetaRecord(Label(std::string("_sub"), ptrRecord));
+        metaRecords.push_back(std::move(subMetaRecord));
 
         for (auto&& s : subServices) {
             auto subPTRRecord = new PTRRecord(Label(std::move(s), subMetaRecord));
             subPTRRecord->setTargetRecord(ptrRecord);
-            records.push_back(subPTRRecord);
+            records.push_back(std::move(subPTRRecord));
         }
     }
 }
@@ -97,11 +99,10 @@ MDNS::begin(bool announce)
         return false;
     }
 
-    //     udp.setBuffer(BUFFER_SIZE, buffer.data);
     udp.begin(MDNS_PORT);
     udp.joinMulticast(MDNS_ADDRESS);
 
-    // TODO: Probing
+    // TODO: Probing: check if host/SRV records we will announce are already in use
 
     if (announce) {
         for (auto& r : records) {
