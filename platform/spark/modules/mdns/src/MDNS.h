@@ -52,15 +52,19 @@ private:
     struct Query {
         Query()
             : header{0}
-            , qtype{0}
-            , qclass{0}
         {
         }
         ~Query() = default;
-        std::vector<std::string> qname;
+
+        struct Question {
+            std::vector<std::string> qname;
+            std::vector<uint16_t> qnameOffset;
+            uint16_t qtype = 0;
+            uint16_t qclass = 0;
+        };
+
         QueryHeader header;
-        uint16_t qtype;
-        uint16_t qclass;
+        std::vector<Question> questions;
     };
 
     UDPExtended udp;
@@ -82,5 +86,6 @@ private:
     Query getQuery();
 
     void processQuery(const Query& q);
+    void processQuestion(const Query::Question& question);
     void writeResponses();
 };

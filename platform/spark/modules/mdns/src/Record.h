@@ -19,15 +19,15 @@
 #define TTL_2MIN 120
 #define TTL_75MIN 4500
 
-#define DOT '.'
+//#define DOT '.'
 
-#define END_OF_NAME 0x0
-#define LABEL_POINTER 0xc0
-#define MAX_LABEL_SIZE 63
-#define INVALID_OFFSET -1
+//#define END_OF_NAME 0x0
+//#define LABEL_POINTER 0xc0
+//#define MAX_LABEL_SIZE 63
+//#define INVALID_OFFSET -1
 
-#define UNKNOWN_NAME -1
-#define BUFFER_UNDERFLOW -2
+//#define UNKNOWN_NAME -1
+//#define BUFFER_UNDERFLOW -2
 
 class Record;
 
@@ -38,8 +38,21 @@ public:
         , next(_next)
         , offset(0)
     {
+        //  If string has extra room allocated, free it. String will not grow
         name.shrink_to_fit();
     }
+
+    // Label can have the exact same label as another record, in which case the own name is omitted
+    Label(Record* _next)
+        : next(_next)
+        , offset(0)
+    {
+        //  If string has extra room allocated, free it. String will not grow
+        name.shrink_to_fit();
+    }
+
+    Label(const Label&) = delete; // no copy
+    Label(Label&&) = default;     // only move
     ~Label() = default;
 
     void writeFull(UDPExtended& udp) const;
@@ -60,6 +73,8 @@ class Record {
 
 public:
     Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce = true);
+    Record(const Record&) = delete; // no copy
+    Record(Record&&) = default;     // only move
     virtual ~Record() = default;
     void announceRecord();
 

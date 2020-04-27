@@ -123,7 +123,7 @@ MDNS::processQueries()
     if (n > 0) {
         auto q = getQuery();
 
-        if (q.qname.size() > 0) {
+        if (q.questions.size() > 0) {
             processQuery(q);
         }
 
@@ -140,6 +140,8 @@ MDNS::getQuery()
 {
     Query q;
 
+    auto bufferSize = udp.available(); // offset in udp is private, calculate from remaining
+
     if (udp.available() >= 12) {
         udp.get(q.header.id);
         udp.get(q.header.flags);
@@ -149,44 +151,90 @@ MDNS::getQuery()
         udp.get(q.header.arcount);
     }
     if ((q.header.flags & 0x8000) == 0 && q.header.qdcount > 0) {
-        uint8_t count = 0;
-        while (count < q.header.qdcount && udp.available() > 4) {
-            if (count == 0) { // only process first question for now
-                while (true) {
-                    uint8_t strlen = 0;
-                    udp.get(strlen);
-                    if (strlen) {
-                        std::string subname;
-                        subname.reserve(strlen);
-                        for (uint8_t len = 0; len < strlen && udp.available() > 0; len++) {
-                            char c = 0;
-                            udp.get(c);
-                            subname.push_back(std::tolower(c));
+        q.questions.reserve(q.header.qdcount);
+        while (q.questions.size() < q.header.qdcount && udp.available() > 4) {
+            Query::Question question;
+            while (true) {
+                auto offset = bufferSize - udp.available();
+                uint8_t strlen = 0;
+                udp.get(strlen);
+                if (strlen & uint8_t(0xc0)) {
+                    // pointer to earlier qname
+                    uint8_t byte2 = 0;
+                    udp.get(byte2);
+                    uint16_t ptrVal = (uint16_t(strlen & uint8_t(0x3F)) << 8) + byte2;
+                    // find earlier qname
+                    bool found = false;
+                    for (const auto& earlierQuestion : q.questions) {
+                        auto o = earlierQuestion.qnameOffset.cbegin();
+                        auto o_end = earlierQuestion.qnameOffset.cend();
+                        auto s = earlierQuestion.qname.cbegin();
+                        auto s_end = earlierQuestion.qname.cend();
+                        for (; o < o_end && s < s_end; o++, s++) {
+                            if (*o == ptrVal) {
+                                question.qname.reserve(question.qname.size() + s_end - s);
+                                // append matching part of qname
+                                question.qname.insert(question.qname.end(), s, s_end);
+                                found = true;
+                                break;
+                            }
                         }
-                        q.qname.push_back(std::move(subname));
-                    } else {
-                        break;
+                        if (found) {
+                            break;
+                        }
                     }
+                    if (found) {
+                        break;
+                    } else {
+                        // invalid pointer in question, ignore packet
+                        q.header.qdcount = 0;
+                        return q;
+                    }
+                } else if (strlen) {
+                    // new (part of) qname
+                    std::string subname;
+                    subname.reserve(strlen);
+                    for (uint8_t len = 0; len < strlen && udp.available() > 0; len++) {
+                        char c = 0;
+                        udp.get(c);
+                        subname.push_back(std::tolower(c));
+                    }
+                    question.qname.push_back(std::move(subname));
+                    question.qnameOffset.push_back(offset);
+                } else {
+                    break;
                 }
-            } else { // TODO: handle multiple questions
             }
-            count++;
-        }
-
-        if (udp.available() >= 4) {
-            udp.get(q.qtype);
-            udp.get(q.qclass);
+            if (udp.available() >= 4) {
+                udp.get(question.qtype);
+                udp.get(question.qclass);
+            } else {
+                // missing fields in question, ignore packet
+                q.header.qdcount = 0;
+                return q;
+            }
+            q.questions.push_back(std::move(question));
         }
     }
     return q;
 }
 
 void
-MDNS::processQuery(const Query& q)
+MDNS::processQuery(const Query& query)
 {
-    for (const auto& r : records) {
-        if (r->match(q.qname.cbegin(), q.qname.cend(), q.qtype, q.qclass)) {
-            r->matched(q.qtype);
+    for (const auto& question : query.questions) {
+        processQuestion(question);
+    }
+}
+
+void
+MDNS::processQuestion(const Query::Question& question)
+{
+    if (question.qname.size() > 0) {
+        for (const auto& r : records) {
+            if (r->match(question.qname.cbegin(), question.qname.cend(), question.qtype, question.qclass)) {
+                r->matched(question.qtype);
+            }
         }
     }
 }
