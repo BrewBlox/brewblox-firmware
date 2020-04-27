@@ -34,6 +34,6 @@ valgrind --tool=massif --threshold=0.1 \
 popd || exit
 
 # open massif.out with massif-visualizer
-massif-visualizer "$EXECUTABLE_DIR/massif.out" &
+# massif-visualizer "$EXECUTABLE_DIR/massif.out" &
 # open xtmemory.kcg with kcachegrind
 kcachegrind "$EXECUTABLE_DIR/xtmemory.kcg" 

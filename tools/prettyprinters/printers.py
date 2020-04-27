@@ -1,3 +1,4 @@
+import gdb.printing
 import re
 import gdb
 
@@ -15,11 +16,11 @@ def lookup_function(val):
     type = type.unqualified().strip_typedefs()
 
     # Get the type name.
-    typename = type.tag      
-    
+    typename = type.tag
+
     if typename == None:
         return None
-    
+
     # Iterate over local dictionary of types to determine
     # if a printer is registered for that type.  Return an
     # instantiation of the printer if found.
@@ -30,6 +31,7 @@ def lookup_function(val):
     # Cannot find a pretty printer.  Return None.
     return None
 
+
 class FixedPointPrinter:
     "Pretty Printer for safe_elastic_fixed_point"
 
@@ -37,22 +39,44 @@ class FixedPointPrinter:
         self.val = val
 
     def to_string(self):
-        raw = self.val['_rep']['_rep']['_rep']
-        m = re.search('cnl::_impl::number_base<cnl::fixed_point<cnl::overflow_integer<cnl::elastic_integer<([0-9]+), (.+)>,\s*cnl::saturated_overflow_tag>,\s*(-[0-9]+),\s*([0-9])>,\s*cnl::overflow_integer<cnl::elastic_integer<([0-9]+),\s*(.+)>,\s*cnl::saturated_overflow_tag>\s*>',
-                      str(self.val.type))
-        scale = 2**(-int(m.group(3)))
-        scaled = (raw + 0.0) / scale
-        return "{0}: {1}".format(raw, scaled)
-        
+        v = self.val
+        while True:
+            v_nested = v["_rep"]
+            if(v_nested.type.code == gdb.TYPE_CODE_INT):
+                raw = float(v_nested)
+                m = re.search('.*cnl::elastic_integer<.*cnl::power<(-[0-9]+), 2> >',
+                              str(self.val.type.tag))
+                scale = 2**(int(m.group(1)))
+                scaled = (raw + 0.0) / scale
+
+                return str(scaled)
+
+            if not v_nested:
+                break
+            v = v_nested
+
+        return None
+
     def display_hint(self):
-        return 'string'   
+        return 'string'
+
 
 # register the pretty-printer
-pretty_printers_dict={}
+pretty_printers_dict = {}
 pretty_printers_dict[
     re.compile(
-        '.*cnl::_impl::number_base<cnl::fixed_point<.*>.*>'   
-        )
-]=FixedPointPrinter
+        "^cnl::.*elastic_integer<.*cnl::power<-.*, 2> >"
+    )
+] = FixedPointPrinter
 gdb.pretty_printers.append(lookup_function)
 
+
+#        return "test"  # + str(self.val.fields())
+# cnl::_impl::number<cnl::_impl::number<cnl::elastic_integer<23, cnl::_impl::number<int, cnl::wide_tag<31, int, void> > >, cnl::saturated_overflow_tag>, cnl::power<-12, 2> > (base):cnl::_impl::number<cnl::_impl::number<cnl::elastic_integer<23, cnl::_impl::number<int, cnl::wide_tag<31, int, void> > >, cnl::saturated_overflow_tag>, cnl::power<-12, 2> >
+# m = re.search(
+#     "cnl::scaled_integer<cnl::_impl::number<cnl::elastic_integer<[0-9]+, cnl::_impl::number<int, cnl::wide_tag<[0-9]+, int, void> > >, cnl::saturated_overflow_tag>, cnl::power<-[0-9]+, 2> >", str(self.val.type))
+# scale = 2**(-int(m.group(3)))
+# scaled = (raw + 0.0) / scale
+# return "{0}: {1}".format(raw, scaled)
+
+# def display_hint(self):

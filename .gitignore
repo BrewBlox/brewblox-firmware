@@ -8,3 +8,4 @@ compile_commands.json
 core
 build/coverage
 *.pyc
+callgraph.dot*

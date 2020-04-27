@@ -129,6 +129,8 @@
   "ccls.highlighting.bold.types": false,
   "ccls.highlighting.bold.templateParameters": false,
   "ccls.highlighting.bold.typeAliases": false,
-  "ccls.clang.pathMappings": ["%h -x c++-header"],
+  "ccls.clang.pathMappings": [
+    "%h -x c++-header"
+  ],
   "cortex-debug.armToolchainPath": "/home/elco/source/gcc-arm-none-eabi-5_3-2016q1/bin"
 }
