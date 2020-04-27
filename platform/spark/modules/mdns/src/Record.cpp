@@ -44,10 +44,15 @@ Label::writeSize() const
     if (offset) {
         return 2;
     }
-    if (next) {
-        return name.size() + next->getLabel().writeSize();
+    uint16_t size = 0;
+    if (name.size() != 0) {
+        // has own string
+        size = 1 + name.size();
     }
-    return name.size() + 1; // name + closing zero
+    if (next) {
+        return size + next->getLabel().writeSize(); // add size of next
+    }
+    return size + 1; // add closing zero
 }
 
 Record::Record(Label label, uint16_t type, uint16_t cls, uint32_t ttl, bool announce)
@@ -242,8 +247,8 @@ ServiceNSECRecord::writeSpecific(UDPExtended& udp) const
     udp.put(uint8_t(0x40));
 }
 
-PTRRecord::PTRRecord(Label label)
-    : Record(std::move(label), PTR_TYPE, IN_CLASS, TTL_75MIN, true) // announce PTR records
+PTRRecord::PTRRecord(Label label, bool announce)
+    : Record(std::move(label), PTR_TYPE, IN_CLASS, TTL_75MIN, announce)
 {
 }
 
@@ -277,12 +282,12 @@ SRVRecord::SRVRecord(Label label, uint16_t _port, PTRRecord* ptr, ARecord* a)
 void
 SRVRecord::writeSpecific(UDPExtended& udp) const
 {
-    uint16_t ptrLabelSize = ptrRecord->getLabel().writeSize();
+    uint16_t ptrLabelSize = aRecord->getLabel().writeSize();
     udp.put(uint16_t(6 + ptrLabelSize));
     udp.put(uint16_t(0));
     udp.put(uint16_t(0));
     udp.put(uint16_t(port));
-    ptrRecord->writeLabel(udp);
+    aRecord->writeLabel(udp);
 }
 
 TXTRecord::TXTRecord(Label label, std::vector<std::string> entries)

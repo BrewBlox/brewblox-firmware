@@ -160,7 +160,7 @@ public:
 class PTRRecord : public Record {
 
 public:
-    PTRRecord(Label label);
+    PTRRecord(Label label, bool announce = true);
 
     virtual void writeSpecific(UDPExtended& udp) const;
     void setTargetRecord(Record* target);

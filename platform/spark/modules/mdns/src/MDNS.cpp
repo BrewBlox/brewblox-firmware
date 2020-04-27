@@ -36,7 +36,7 @@ MDNS::addService(Protocol protocol, std::string serviceType, std::string service
     auto ptrRecord = new PTRRecord(Label(std::move(serviceType), protocolRecord));
 
     // An enumeration record for DNS-SD
-    auto enumerationRecord = new PTRRecord(Label(std::string(), this->SERVICES));
+    auto enumerationRecord = new PTRRecord(Label(std::string(), this->SERVICES), false);
     enumerationRecord->setTargetRecord(ptrRecord);
 
     // the service record indicating under which name/port this service is available
