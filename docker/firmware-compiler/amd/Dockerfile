@@ -7,10 +7,13 @@ ENV TZ=Europe/Amsterdam \
 # install various build deps
 RUN apt-get update -q \
   && apt-get install -qy curl \
-  && apt-get install -qy --no-install-recommends build-essential autoconf automake libtool unzip pkg-config libprotobuf-dev protobuf-compiler tzdata git bash dfu-util python python-pip gdb lcov rsync \
-  && pip install --upgrade pip setuptools \
+  && apt-get install -qy --no-install-recommends \
+  build-essential autoconf automake libtool \
+  unzip pkg-config libprotobuf-dev protobuf-compiler \
+  tzdata git bash python3-pip rsync curl dfu-util gdb lcov \
+  && python3 -m pip install --upgrade pip setuptools \
   # and install protobuf python package (used by nanopb), and pyserial (used by program-dfu)
-  && pip install protobuf pyserial compiledb \
+  && pip3 install protobuf pyserial compiledb \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -23,7 +26,7 @@ ENV GCC_ARM_URL="https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q1-update/+do
 
 RUN dpkg --add-architecture i386 \
   && apt-get update -q \
-  && apt-get install --no-install-recommends -qy isomd5sum bzip2 vim-common libarchive-zip-perl libc6:i386 \
+  && apt-get install -qy --no-install-recommends isomd5sum bzip2 vim-common libarchive-zip-perl libc6:i386 \
   && curl -o /tmp/gcc-arm-none-eabi.tar.bz2 -sSL ${GCC_ARM_URL} \
   && tar xjvf /tmp/gcc-arm-none-eabi.tar.bz2 -C /usr/local \
   && mv /usr/local/gcc-arm-none-eabi-${GCC_ARM_VERSION}/ /usr/local/gcc-arm-embedded \
@@ -44,12 +47,13 @@ RUN echo "tzdata tzdata/Areas select Europe" > /tmp/preseed.txt; \
 ENV BOOST_VERSION=1_72_0 \
   BOOST_ROOT=/boost/boost_1_72_0
 
-RUN mkdir -p /boost && curl -sSL https://s3.amazonaws.com/spark-assets/boost_$BOOST_VERSION.tar.gz | tar -xz -C /boost \
+RUN mkdir -p /boost \
+  && curl -sSL https://s3.amazonaws.com/spark-assets/boost_$BOOST_VERSION.tar.gz | tar -xz -C /boost \
   && export DYLD_LIBRARY_PATH="$BOOST_ROOT/stage/lib:$DYLD_LIBRARY_PATH" \
   && export LD_LIBRARY_PATH="$BOOST_ROOT/stage/lib:$LD_LIBRARY_PATH" \
   && cd $BOOST_ROOT \
-  && ./bootstrap.sh \  
-  && ./b2  --with-thread --with-system --with-program_options --with-random --with-regex --threading=multi link=static runtime-link=static
+  && ./bootstrap.sh \
+  && ./b2 --with-thread --with-system --with-program_options --with-random --with-regex --threading=multi link=static runtime-link=static
 
 WORKDIR /firmware/build
 CMD bash
