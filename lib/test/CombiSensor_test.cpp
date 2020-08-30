@@ -19,7 +19,7 @@
 
 #include <catch.hpp>
 
-#include "../inc/CombinedSensor.h"
+#include "../inc/CombiSensor.h"
 #include "../inc/TempSensorMock.h"
 
 SCENARIO("CombiSensorTest", "[combisensor]")
