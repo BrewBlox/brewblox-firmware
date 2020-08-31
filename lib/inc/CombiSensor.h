@@ -29,14 +29,14 @@
 class CombiSensor : TempSensor {
 public:
     enum class CombineFunc : uint8_t {
-        NONE = 0,
-        MEAN = 1,
-        MIN = 2,
-        MAX = 3,
+
+        AVG = 0,
+        MIN = 1,
+        MAX = 2,
     };
 
     std::vector<std::function<std::shared_ptr<TempSensor>()>> inputs;
-    CombineFunc func = CombineFunc::NONE;
+    CombineFunc func = CombineFunc::AVG;
 
 private:
     temp_t m_value = temp_t{0};
@@ -61,9 +61,7 @@ public:
         m_value = 0;
         m_valid = false;
         switch (func) {
-        case CombineFunc::NONE:
-            break;
-        case CombineFunc::MEAN: {
+        case CombineFunc::AVG: {
             auto sum = safe_elastic_fixed_point<18, 12>{0};
             uint16_t count = 0;
             for (auto sensorLookup : inputs) {

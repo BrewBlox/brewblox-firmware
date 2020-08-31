@@ -31,7 +31,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
         THEN("It reads as invalid and zero")
         {
             combined.update();
-            combined.func = CombiSensor::CombineFunc::MEAN;
+            combined.func = CombiSensor::CombineFunc::AVG;
             CHECK(combined.valid() == false);
             CHECK(combined.value() == temp_t(0));
 
@@ -62,17 +62,9 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
         };
 
-        THEN("It reads as invalid and zero if no func is selected")
+        THEN("The average is returned when AVG is selected")
         {
-            combined.func = CombiSensor::CombineFunc::NONE;
-            combined.update();
-            CHECK(combined.valid() == false);
-            CHECK(combined.value() == temp_t(0));
-        }
-
-        THEN("The average is returned when MEAN is selected")
-        {
-            combined.func = CombiSensor::CombineFunc::MEAN;
+            combined.func = CombiSensor::CombineFunc::AVG;
             combined.update();
             CHECK(combined.valid() == true);
             CHECK(combined.value() == temp_t(21.5));
@@ -99,9 +91,9 @@ SCENARIO("CombiSensorTest", "[combisensor]")
             mock2->connected(false);
             mock3->connected(false);
 
-            THEN("The average is returned when MEAN is selected")
+            THEN("The average is returned when AVG is selected")
             {
-                combined.func = CombiSensor::CombineFunc::MEAN;
+                combined.func = CombiSensor::CombineFunc::AVG;
                 combined.update();
                 CHECK(combined.valid() == true);
                 CHECK(combined.value() == temp_t(21));
