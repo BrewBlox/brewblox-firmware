@@ -27,6 +27,7 @@
 #include "blox/ActuatorOffsetBlock.h"
 #include "blox/ActuatorPwmBlock.h"
 #include "blox/BalancerBlock.h"
+#include "blox/CombiSensorBlock.h"
 #include "blox/DS2408Block.h"
 #include "blox/DS2413Block.h"
 #include "blox/DigitalActuatorBlock.h"
@@ -165,6 +166,7 @@ makeBrewBloxBox()
         {MotorValveBlock::staticTypeId(), []() { return std::make_shared<MotorValveBlock>(objects); }},
         {ActuatorLogicBlock::staticTypeId(), []() { return std::make_shared<ActuatorLogicBlock>(objects); }},
         {MockPinsBlock::staticTypeId(), []() { return std::make_shared<MockPinsBlock>(); }},
+        {CombiSensorBlock::staticTypeId(), []() { return std::make_shared<CombiSensorBlock>(objects); }},
     };
 
     static EepromAccessImpl eeprom;

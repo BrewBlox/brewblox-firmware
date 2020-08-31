@@ -26,7 +26,7 @@
 /*
  * A process value has a setting and an current value
  */
-class CombiSensor : TempSensor {
+class CombiSensor : public TempSensor {
 public:
     enum class CombineFunc : uint8_t {
 
