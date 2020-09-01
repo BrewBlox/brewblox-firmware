@@ -25,17 +25,17 @@
 #include "../BrewBlox.h"
 #include "BrewBloxTestBox.h"
 #include "Temperature.h"
-#include "blox/CombiSensorBlock.h"
+#include "blox/TempSensorCombiBlock.h"
 #include "blox/TempSensorMockBlock.h"
 #include "cbox/Box.h"
 #include "cbox/DataStream.h"
 #include "cbox/DataStreamIo.h"
 #include "cbox/Object.h"
-#include "proto/test/cpp/CombiSensor_test.pb.h"
+#include "proto/test/cpp/TempSensorCombi_test.pb.h"
 #include "proto/test/cpp/TempSensorMock_test.pb.h"
 #include "testHelpers.h"
 
-SCENARIO("A CombiSensor block")
+SCENARIO("A TempSensorCombi block")
 {
     BrewBloxTestBox testBox;
     using commands = cbox::Box::CommandID;
@@ -95,14 +95,14 @@ SCENARIO("A CombiSensor block")
     testBox.put(commands::CREATE_OBJECT);
     testBox.put(cbox::obj_id_t(100));
     testBox.put(uint8_t(0xFF));
-    testBox.put(CombiSensorBlock::staticTypeId());
+    testBox.put(TempSensorCombiBlock::staticTypeId());
 
-    auto combiSensor = blox::CombiSensor();
-    combiSensor.add_sensors(101);
-    combiSensor.add_sensors(102);
-    combiSensor.add_sensors(103);
+    auto TempSensorCombi = blox::TempSensorCombi();
+    TempSensorCombi.add_sensors(101);
+    TempSensorCombi.add_sensors(102);
+    TempSensorCombi.add_sensors(103);
 
-    testBox.put(combiSensor);
+    testBox.put(TempSensorCombi);
 
     testBox.processInput();
     CHECK(testBox.lastReplyHasStatusOk());
@@ -122,7 +122,7 @@ SCENARIO("A CombiSensor block")
                 testBox.put(commands::READ_OBJECT);
                 testBox.put(cbox::obj_id_t(100));
 
-                auto decoded = blox::CombiSensor();
+                auto decoded = blox::TempSensorCombi();
                 testBox.processInputToProto(decoded);
 
                 CHECK(testBox.lastReplyHasStatusOk());
@@ -138,10 +138,10 @@ SCENARIO("A CombiSensor block")
             testBox.put(commands::WRITE_OBJECT);
             testBox.put(cbox::obj_id_t(100));
             testBox.put(uint8_t(0xFF));
-            testBox.put(CombiSensorBlock::staticTypeId());
+            testBox.put(TempSensorCombiBlock::staticTypeId());
 
-            combiSensor.set_func(blox::CombineFunc::MAX);
-            testBox.put(combiSensor);
+            TempSensorCombi.set_combinefunc(blox::SensorCombiFunc::SENSOR_COMBI_FUNC_MAX);
+            testBox.put(TempSensorCombi);
 
             testBox.processInput();
             CHECK(testBox.lastReplyHasStatusOk());
@@ -155,11 +155,11 @@ SCENARIO("A CombiSensor block")
                 testBox.put(commands::READ_OBJECT);
                 testBox.put(cbox::obj_id_t(100));
 
-                auto decoded = blox::CombiSensor();
+                auto decoded = blox::TempSensorCombi();
                 testBox.processInputToProto(decoded);
 
                 CHECK(testBox.lastReplyHasStatusOk());
-                CHECK(decoded.ShortDebugString() == "value: 94208 func: MAX sensors: 101 sensors: 102 sensors: 103");
+                CHECK(decoded.ShortDebugString() == "value: 94208 combinefunc: SENSOR_COMBI_FUNC_MAX sensors: 101 sensors: 102 sensors: 103");
             }
         }
     }
@@ -171,10 +171,10 @@ SCENARIO("A CombiSensor block")
             testBox.put(commands::WRITE_OBJECT);
             testBox.put(cbox::obj_id_t(100));
             testBox.put(uint8_t(0xFF));
-            testBox.put(CombiSensorBlock::staticTypeId());
+            testBox.put(TempSensorCombiBlock::staticTypeId());
 
-            combiSensor.set_func(blox::CombineFunc::MIN);
-            testBox.put(combiSensor);
+            TempSensorCombi.set_combinefunc(blox::SensorCombiFunc::SENSOR_COMBI_FUNC_MIN);
+            testBox.put(TempSensorCombi);
 
             testBox.processInput();
             CHECK(testBox.lastReplyHasStatusOk());
@@ -188,11 +188,11 @@ SCENARIO("A CombiSensor block")
                 testBox.put(commands::READ_OBJECT);
                 testBox.put(cbox::obj_id_t(100));
 
-                auto decoded = blox::CombiSensor();
+                auto decoded = blox::TempSensorCombi();
                 testBox.processInputToProto(decoded);
 
                 CHECK(testBox.lastReplyHasStatusOk());
-                CHECK(decoded.ShortDebugString() == "value: 86016 func: MIN sensors: 101 sensors: 102 sensors: 103");
+                CHECK(decoded.ShortDebugString() == "value: 86016 combinefunc: SENSOR_COMBI_FUNC_MIN sensors: 101 sensors: 102 sensors: 103");
             }
         }
     }
@@ -257,7 +257,7 @@ SCENARIO("A CombiSensor block")
             testBox.put(commands::READ_OBJECT);
             testBox.put(cbox::obj_id_t(100));
 
-            auto decoded = blox::CombiSensor();
+            auto decoded = blox::TempSensorCombi();
             testBox.processInputToProto(decoded);
 
             CHECK(testBox.lastReplyHasStatusOk());

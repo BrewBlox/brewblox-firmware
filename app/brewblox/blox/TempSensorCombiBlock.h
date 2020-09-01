@@ -1,34 +1,34 @@
 #pragma once
 
-#include "CombiSensor.h"
+#include "TempSensorCombi.h"
 
 #include "TempSensor.h"
 #include "blox/Block.h"
 #include "blox/FieldTags.h"
 #include "cbox/CboxPtr.h"
-#include "proto/cpp/CombiSensor.pb.h"
+#include "proto/cpp/TempSensorCombi.pb.h"
 
-class CombiSensorBlock : public Block<BrewBloxTypes_BlockType_CombiSensor> {
+class TempSensorCombiBlock : public Block<BrewBloxTypes_BlockType_TempSensorCombi> {
 private:
-    CombiSensor sensor;
+    TempSensorCombi sensor;
     cbox::ObjectContainer& objectsRef; // remember object container reference to create CboxPtrs
     std::vector<cbox::CboxPtr<TempSensor>> inputs;
 
 public:
-    CombiSensorBlock(cbox::ObjectContainer& objects)
+    TempSensorCombiBlock(cbox::ObjectContainer& objects)
         : objectsRef(objects)
     {
     }
 
-    virtual ~CombiSensorBlock() = default;
+    virtual ~TempSensorCombiBlock() = default;
 
     virtual cbox::CboxError
     streamFrom(cbox::DataIn& in) override final
     {
-        blox_CombiSensor newData = blox_CombiSensor_init_zero;
-        cbox::CboxError result = streamProtoFrom(in, &newData, blox_CombiSensor_fields, blox_CombiSensor_size);
+        blox_TempSensorCombi newData = blox_TempSensorCombi_init_zero;
+        cbox::CboxError result = streamProtoFrom(in, &newData, blox_TempSensorCombi_fields, blox_TempSensorCombi_size);
         if (result == cbox::CboxError::OK) {
-            sensor.func = CombiSensor::CombineFunc(newData.func);
+            sensor.func = TempSensorCombi::CombineFunc(newData.combinefunc);
             inputs.clear();
             sensor.inputs.clear();
             inputs.reserve(newData.sensors_count);
@@ -44,12 +44,12 @@ public:
     }
 
     void
-    writeMessage(blox_CombiSensor& message, bool includeReadOnly) const
+    writeMessage(blox_TempSensorCombi& message, bool includeReadOnly) const
     {
         FieldTags stripped;
 
         message.sensors_count = sensor.inputs.size();
-        message.func = _blox_CombineFunc(sensor.func);
+        message.combinefunc = _blox_SensorCombiFunc(sensor.func);
         for (uint8_t i = 0; i < message.sensors_count && i < 8; i++) {
             message.sensors[i] = inputs[i].getId();
         }
@@ -58,7 +58,7 @@ public:
             if (sensor.valid()) {
                 message.value = cnl::unwrap((sensor.value()));
             } else {
-                stripped.add(blox_CombiSensor_value_tag);
+                stripped.add(blox_TempSensorCombi_value_tag);
             }
         }
         stripped.copyToMessage(message.strippedFields, message.strippedFields_count, 1);
@@ -67,18 +67,18 @@ public:
     virtual cbox::CboxError
     streamTo(cbox::DataOut& out) const override final
     {
-        blox_CombiSensor message = blox_CombiSensor_init_zero;
+        blox_TempSensorCombi message = blox_TempSensorCombi_init_zero;
         writeMessage(message, true);
 
-        return streamProtoTo(out, &message, blox_CombiSensor_fields, blox_CombiSensor_size);
+        return streamProtoTo(out, &message, blox_TempSensorCombi_fields, blox_TempSensorCombi_size);
     }
 
     virtual cbox::CboxError
     streamPersistedTo(cbox::DataOut& out) const override final
     {
-        blox_CombiSensor message = blox_CombiSensor_init_zero;
+        blox_TempSensorCombi message = blox_TempSensorCombi_init_zero;
         writeMessage(message, false);
-        return streamProtoTo(out, &message, blox_CombiSensor_fields, blox_CombiSensor_size);
+        return streamProtoTo(out, &message, blox_TempSensorCombi_fields, blox_TempSensorCombi_size);
     }
 
     virtual cbox::update_t
@@ -91,7 +91,7 @@ public:
     virtual void*
     implements(const cbox::obj_type_t& iface) override final
     {
-        if (iface == BrewBloxTypes_BlockType_CombiSensor) {
+        if (iface == BrewBloxTypes_BlockType_TempSensorCombi) {
             return this; // me!
         }
         if (iface == cbox::interfaceId<TempSensor>()) {
@@ -102,7 +102,7 @@ public:
         return nullptr;
     }
 
-    CombiSensor&
+    TempSensorCombi&
     get()
     {
         return sensor;

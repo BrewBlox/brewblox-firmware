@@ -19,29 +19,29 @@
 
 #include <catch.hpp>
 
-#include "../inc/CombiSensor.h"
+#include "../inc/TempSensorCombi.h"
 #include "../inc/TempSensorMock.h"
 
-SCENARIO("CombiSensorTest", "[combisensor]")
+SCENARIO("TempSensorCombiTest", "[TempSensorCombi]")
 {
     WHEN("No sensors are added to the combi sensor")
     {
-        CombiSensor combined;
+        TempSensorCombi combined;
 
         THEN("It reads as invalid and zero")
         {
             combined.update();
-            combined.func = CombiSensor::CombineFunc::AVG;
+            combined.func = TempSensorCombi::CombineFunc::AVG;
             CHECK(combined.valid() == false);
             CHECK(combined.value() == temp_t(0));
 
             combined.update();
-            combined.func = CombiSensor::CombineFunc::MIN;
+            combined.func = TempSensorCombi::CombineFunc::MIN;
             CHECK(combined.valid() == false);
             CHECK(combined.value() == temp_t(0));
 
             combined.update();
-            combined.func = CombiSensor::CombineFunc::MAX;
+            combined.func = TempSensorCombi::CombineFunc::MAX;
             CHECK(combined.valid() == false);
             CHECK(combined.value() == temp_t(0));
         }
@@ -49,7 +49,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
     WHEN("4 sensors are added to the combi sensor")
     {
-        CombiSensor combined;
+        TempSensorCombi combined;
         auto mock1 = std::make_shared<TempSensorMock>(20);
         auto mock2 = std::make_shared<TempSensorMock>(18);
         auto mock3 = std::make_shared<TempSensorMock>(26);
@@ -64,7 +64,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
         THEN("The average is returned when AVG is selected")
         {
-            combined.func = CombiSensor::CombineFunc::AVG;
+            combined.func = TempSensorCombi::CombineFunc::AVG;
             combined.update();
             CHECK(combined.valid() == true);
             CHECK(combined.value() == temp_t(21.5));
@@ -72,7 +72,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
         THEN("The lowest value is returned when MIN selected")
         {
-            combined.func = CombiSensor::CombineFunc::MIN;
+            combined.func = TempSensorCombi::CombineFunc::MIN;
             combined.update();
             CHECK(combined.valid() == true);
             CHECK(combined.value() == temp_t(18));
@@ -80,7 +80,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
         THEN("The highest value is returned when MAX is selected")
         {
-            combined.func = CombiSensor::CombineFunc::MAX;
+            combined.func = TempSensorCombi::CombineFunc::MAX;
             combined.update();
             CHECK(combined.valid() == true);
             CHECK(combined.value() == temp_t(26));
@@ -93,7 +93,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
             THEN("The average is returned when AVG is selected")
             {
-                combined.func = CombiSensor::CombineFunc::AVG;
+                combined.func = TempSensorCombi::CombineFunc::AVG;
                 combined.update();
                 CHECK(combined.valid() == true);
                 CHECK(combined.value() == temp_t(21));
@@ -101,7 +101,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
             THEN("The lowest value is returned when MIN selected")
             {
-                combined.func = CombiSensor::CombineFunc::MIN;
+                combined.func = TempSensorCombi::CombineFunc::MIN;
                 combined.update();
                 CHECK(combined.valid() == true);
                 CHECK(combined.value() == temp_t(20));
@@ -109,7 +109,7 @@ SCENARIO("CombiSensorTest", "[combisensor]")
 
             THEN("The highest value is returned when MAX is selected")
             {
-                combined.func = CombiSensor::CombineFunc::MAX;
+                combined.func = TempSensorCombi::CombineFunc::MAX;
                 combined.update();
                 CHECK(combined.valid() == true);
                 CHECK(combined.value() == temp_t(22));

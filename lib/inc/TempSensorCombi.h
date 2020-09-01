@@ -26,7 +26,7 @@
 /*
  * A process value has a setting and an current value
  */
-class CombiSensor : public TempSensor {
+class TempSensorCombi : public TempSensor {
 public:
     enum class CombineFunc : uint8_t {
 
@@ -43,8 +43,8 @@ private:
     bool m_valid = false;
 
 public:
-    CombiSensor() = default;
-    virtual ~CombiSensor() = default;
+    TempSensorCombi() = default;
+    virtual ~TempSensorCombi() = default;
 
     virtual bool valid() const override final
     {
