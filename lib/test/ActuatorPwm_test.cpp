@@ -42,13 +42,12 @@
 #include <iomanip>
 #include <iostream>
 
-#define PRINT_TOGGLE_TIMES 0
+bool printToggleTimes = false;
+bool printSummary = false;
+auto output = &std::cout;
 
 using value_t = ActuatorAnalog::value_t;
 using State = ActuatorDigitalBase::State;
-
-const auto output = decltype(&std::cout)(nullptr);
-// auto output = &std::cout; // uncomment for stdout output
 
 double
 randomIntervalTest(
@@ -67,7 +66,7 @@ randomIntervalTest(
     ticks_millis_t totalLowTime = 0;
     ticks_millis_t nextUpdate = now;
     ticks_millis_t lastOneSecondUpdate = now;
-    if (output) {
+    if (printToggleTimes) {
         *output << std::endl
                 << std::endl
                 << "*** Results running 100 periods and random 1-"
@@ -76,12 +75,13 @@ randomIntervalTest(
                 << " and period " << pwm.period()
                 << " ***" << std::endl;
 
-#if PRINT_TOGGLE_TIMES
-        *output << std::endl
-                << std::endl
-                << "l->h time        h->l time       high time       low time    value   period"
-                << std::endl;
-#endif
+        if (printToggleTimes) {
+            *output << std::endl
+                    << std::endl
+                    << "\t"
+                    << " l->h time\t h->l time\t high time\t  low time\t  value\t    period"
+                    << std::endl;
+        }
     }
 
     for (int i = 0; i < numPeriods + 4; i++) {
@@ -100,15 +100,6 @@ randomIntervalTest(
         if (i >= 4) {
             totalHighTime += highTime;
         }
-#if PRINT_TOGGLE_TIMES
-        if (output) {
-            *output << std::setw(10) << lowToHighTime
-                    << "\t"
-                    << std::setw(10) << highToLowTime
-                    << "\t"
-                    << std::setw(10) << highTime;
-        }
-#endif
         do {
             now += 1 + std::rand() % delayMax;
             if (now >= nextUpdate) {
@@ -124,19 +115,26 @@ randomIntervalTest(
         if (i >= 4) {
             totalLowTime += lowTime;
         }
-#if PRINT_TOGGLE_TIMES
-        if (output) {
+        if (printToggleTimes) {
+
             *output << "\t"
+                    << std::setw(10) << lowToHighTime
+                    << "\t"
+                    << std::setw(10) << highToLowTime
+                    << "\t"
+                    << std::setw(10) << highTime
+                    << "\t"
                     << std::setw(10) << lowTime
-                    << std::setw(10) << pwm.value()
+                    << "\t"
+                    << std::setprecision(5) << double(pwm.value())
+                    << "\t"
                     << std::setw(10) << lowTime + highTime
                     << std::endl;
         }
-#endif
     }
     double totalTime = totalHighTime + totalLowTime;
     double avgDuty = double(totalHighTime) / (totalHighTime + totalLowTime) * double(100);
-    if (output) {
+    if (printSummary) {
         *output << "total high time: " << totalHighTime << "\n"
                 << "total low time: " << totalLowTime << "\n"
                 << "avg duty: " << avgDuty << "/100\n"
@@ -501,6 +499,68 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         CHECK(lowTime == pwm.period() * 0.6 * 1.5);
     }
 
+    WHEN("the PWM runs at 0% for an hour, then 100% for an hour, then 0% for an hour and then goes to 99%")
+    {
+        pwm.setting(0);
+        while (now < 1000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        pwm.setting(100);
+        while (now < 2000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        pwm.setting(0);
+        while (now < 3000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        THEN("The reported achieved duty is 99% within 1 period")
+        {
+            pwm.setting(99);
+            auto start = now;
+            while (now < start + 10000) {
+                now = pwm.update(now);
+                if (pwm.value() == Approx(99).margin(1)) {
+                    break;
+                }
+            }
+            CHECK(now - start < pwm.period());
+        }
+    }
+
+    WHEN("the PWM runs at 100% for an hour, then 0% for an hour, then 100% for an hour and then goes to 1%")
+    {
+        pwm.setting(100);
+        while (now < 1000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        pwm.setting(0);
+        while (now < 2000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        pwm.setting(100);
+        while (now < 3000 * 3600) {
+            now = pwm.update(now);
+        }
+
+        THEN("The reported achieved duty is 1% within 1 period")
+        {
+            pwm.setting(1);
+            auto start = now;
+            while (now < start + 10000) {
+                now = pwm.update(now);
+                if (pwm.value() == Approx(1).margin(1)) {
+                    break;
+                }
+            }
+            CHECK(now - start < pwm.period());
+        }
+    }
+
     WHEN("the PWM actuator is set from 0 to 50, it goes high immediately")
     {
         pwm.setting(0);
@@ -699,7 +759,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
 
         // we don't use 2% and 98% here, because with the maximum history taken into account it is not achievable under the constraints
         CHECK(randomIntervalTest(10, pwm, mock, 4.0, 5000, now) == Approx(4.0).margin(0.5));
-        CHECK(randomIntervalTest(10, pwm, mock, 96.0, 5000, now) == Approx(96.0).margin(0.5));
+        CHECK(randomIntervalTest(10, pwm, mock, 92.0, 5000, now) == Approx(92.0).margin(0.5));
     }
 
     WHEN("The actuator has been set to 30% duty and switches to 20% with minimum ON time at 40% duty")

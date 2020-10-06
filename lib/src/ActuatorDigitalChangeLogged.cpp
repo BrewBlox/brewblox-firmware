@@ -92,7 +92,6 @@ ActuatorDigitalChangeLogged::activeDurations(const ticks_millis_t& now)
     result.lastState = history.front().newState;
     auto end = now;
     auto start = ticks_millis_t(0);
-    //auto minStartTime = now - maxHistory;
     uint8_t activePeriods = 0;
 
     auto h = history.cbegin();

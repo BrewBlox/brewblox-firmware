@@ -153,58 +153,70 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         // 2.5 periods gives room to correct jitter, 2 periods is too tight at the end of the period
         // Note that future of this period is also counted later, so this implements 'max 2 periods in the past', not 2 periods total.
 
-        // Scenario 1: current period is longer than 2*m_period. If value is 0% or 100%, limit history to 2 normal periods
-        const uint32_t twoPeriods = 2 * m_period;
-        if (currentPeriod > twoPeriods) {
-            if (lastHistoricState == State::Active && m_dutySetting == maxDuty()) {
-                currentPeriod = twoPeriods;
-                if (currentHighTime > twoPeriods) {
-                    // high for over 2 * m_period
-                    currentHighTime = currentPeriod;
+        // Scenario 1: current period is longer than 2* m_period. Limit history for the fixed part to 50% of the period
+        // If the current period exeeds that limit, rewrite the previous period to absorb the discarded part
+        // Shift the previous period in time by excess
+        // This means that if the excess was larger than the previous period, the excess fully encapsulates the period
+        // If it doesn't fully encapsulate it there are 2 options:
+        // - The excess is smaller than the high/low time ending the previous period -> high/low is previous period - excess
+        // - The excess is larger than the high/low time ending the previous period -> high/low time doesn't change
+        if (currentPeriod > (2 * m_period)) {
+            auto limit = m_period >> 1;
+            if ((m_dutySetting <= (maxDuty() >> 1))) {
+                // high period is fixed, low period adapts
+                if (currentHighTime > limit) {
+                    auto excess = currentHighTime - limit;
+                    if (excess > previousPeriod) {
+                        previousHighTime = previousPeriod;
+                    } else if (!(excess < previousHighTime)) {
+                        previousHighTime = excess;
+                    }
+                    auto currentLowTime = currentPeriod - currentHighTime;
+                    currentHighTime = limit;
+                    currentPeriod = currentLowTime + limit;
                 }
-                previousPeriod = 0;
-                previousHighTime = 0;
-            } else if (lastHistoricState == State::Inactive && m_dutySetting == 0) {
-                if (currentPeriod > twoPeriods + currentHighTime) {
-                    // low for over 2 * m_period
-                    currentHighTime = 0;
-                } else {
-                    currentHighTime = twoPeriods - (currentPeriod - currentHighTime);
+            } else {
+                // low period is fixed, high period adapts
+                auto currentLowTime = currentPeriod - currentHighTime;
+                if (currentLowTime > limit) {
+                    auto excess = currentLowTime - limit;
+                    if (excess > previousPeriod) {
+                        previousHighTime = 0;
+                    } else if (excess < previousHighTime) {
+                        previousHighTime = previousPeriod - excess;
+                    }
+                    currentPeriod = currentHighTime + limit;
                 }
-                currentPeriod = twoPeriods;
-                previousPeriod = 0;
-                previousHighTime = 0;
             }
         }
-        // scenario 2: both periods together are longer than 2.5 * m_period
-        const uint32_t twoAndAHalfPeriods = 2 * m_period + (m_period >> 1);
-        if (previousPeriod + currentPeriod > twoAndAHalfPeriods) {
-            // compress the previous period, limit length to current period length
-            // Combined with the adjustment below it will morph the previous period into a perfect desired period at current duty
-
-            if (currentPeriod > previousPeriod) {
+        // scenario 2: both periods combined are longer than 2.5 * m_period
+        if (previousPeriod + currentPeriod > 2 * m_period + (m_period >> 1)) {
+            // compress the previous period, limit length to current period length.
+            auto maxPeriod = std::max(currentPeriod, m_period);
+            if (previousPeriod > maxPeriod) {
                 if (lastHistoricState == State::Active) {
-                    // limit low time of previous period (oldest history) to current low time
-                    auto currentLowTime = currentPeriod - currentHighTime;
+                    // limit low time of previous period (oldest history) to 3x current low time
+                    auto maxLowTime = 3 * (maxPeriod - currentHighTime);
                     auto previousLowTime = previousPeriod - previousHighTime;
-                    if (previousLowTime > currentLowTime) {
-                        previousPeriod = previousHighTime + currentLowTime;
+                    if (previousLowTime > maxLowTime) {
+                        previousPeriod = previousHighTime + maxLowTime;
                     }
                 } else if (lastHistoricState == State::Inactive) {
-                    // limit high time of previous period (oldest history) to current high time
-                    if (previousHighTime > currentHighTime) {
+                    // limit high time of previous period (oldest history) to 3x current high time
+                    auto maxHighTime = 3 * (std::max(currentHighTime, m_dutyTime));
+                    if (previousHighTime > maxHighTime) {
                         auto previousLowTime = previousPeriod - previousHighTime;
-                        previousHighTime = currentHighTime;
+                        previousHighTime = maxHighTime;
                         previousPeriod = previousHighTime + previousLowTime;
                     }
                 }
             }
         }
 
-        // if previous period was shortened, lengthen it again with the state that would result it bringing duty closer to desired duty
         if (previousPeriod < m_period) {
+            // if previous period was shortened, lengthen it again with the state that would result it bringing duty closer to desired duty
             auto shortenedBy = m_period - previousPeriod;
-            previousPeriod += shortenedBy;
+            previousPeriod = m_period;
             if (previousHighTime < m_dutyTime) {
                 previousHighTime = std::min(previousHighTime + shortenedBy, m_dutyTime);
             }
@@ -232,17 +244,16 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
 
                 // high period can adapt between boundaries
                 // maximum high time is the highest value among:
-                // - 1.5x the previous high time
                 // - 1.5x the normal high time
+                // - 1.5x the previous high time, but not more than 3x the normal high time
                 // minimum high time is 75% of normal high time
 
                 // use unadjusted time to calculate max time
-
-                auto minHighTime = invDutyTime - (invDutyTime >> 2);
+                auto minHighTime = m_dutyTime - (m_dutyTime >> 2);
                 if (currentHighTime < minHighTime) {
                     wait = minHighTime - currentHighTime;
                 } else {
-                    auto maxHighTime = std::max(m_dutyTime, durations.previousActive);
+                    auto maxHighTime = std::max(std::max(m_dutyTime, durations.previousActive), (3 * m_dutyTime) >> 2);
                     if (durations.previousPeriod >= m_period) {
                         maxHighTime += maxHighTime / 2; // stretching allowed if previous period was not shortened
                     }
@@ -282,15 +293,16 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             } else {
                 // low period can adapt between boundaries
                 // maximum low time is the highest value among:
-                // - 1.5x the previous low time
                 // - 1.5x the normal low time
+                // - 1.5x the previous low time, but not more than 3x the normal low time
                 // minimum low time is 75% of normal low time
 
                 auto minLowTime = invDutyTime - (invDutyTime >> 2);
                 if (currentLowTime < minLowTime) {
                     wait = minLowTime - currentLowTime;
                 } else {
-                    auto maxLowTime = std::max(invDutyTime, durations.previousPeriod - durations.previousActive);
+                    auto maxLowTime = std::max(std::max(invDutyTime, durations.previousPeriod - durations.previousActive), (3 * invDutyTime) >> 2);
+
                     if (durations.previousPeriod >= m_period) {
                         maxLowTime += maxLowTime / 2; // stretching only allowed if previous period was not shortened
                     }
