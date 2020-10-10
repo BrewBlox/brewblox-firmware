@@ -149,10 +149,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
 
         auto wait = duration_millis_t(0);
 
-        // limit history length taken into account to 2.5 periods duration.
-        // 2.5 periods gives room to correct jitter, 2 periods is too tight at the end of the period
-        // Note that future of this period is also counted later, so this implements 'max 2 periods in the past', not 2 periods total.
-
+        // limit history length taken into account
         // special case for 0% and 100%, use fixed window of 2*m_period
         auto twoPeriods = 2 * m_period;
         if (m_dutySetting == 0) {
@@ -179,69 +176,59 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             previousPeriod = 0;
             previousHighTime = 0;
         } else {
+            // The shortest part of the period is fixed (high over 50%, low under 50%)
+            // For the previous period, cap the fixed part at m_period if the period was over 2 * m_periods long
+            // discard excess
+            if (previousPeriod > (twoPeriods)) {
+                auto limit = m_period;
+                if ((2 * m_dutyTime <= m_period)) {
+                    // high period is fixed, low period adapts
+                    if (previousHighTime > limit) {
+                        auto excess = previousHighTime - limit;
 
-            // Scenario 1: current period is longer than 2* m_period. Limit history for the fixed part to 50% of the period
-            // If the current period exeeds that limit, rewrite the previous period to absorb the discarded part
-            // Shift the previous period in time by excess
-            // This means that if the excess was larger than the previous period, the excess fully encapsulates the period
-            // If it doesn't fully encapsulate it there are 2 options:
-            // - The excess is smaller than the high/low time ending the previous period -> high/low is previous period - excess
-            // - The excess is larger than the high/low time ending the previous period -> high/low time doesn't change
-
-            if (currentPeriod > (twoPeriods)) {
-                auto limit = m_period >> 1;
-                if ((m_dutySetting <= (maxDuty() >> 1))) {
+                        previousHighTime = limit;
+                        previousPeriod -= excess;
+                    }
+                } else {
+                    // low period is fixed, high period adapts
+                    auto previousLowTime = previousPeriod - previousHighTime;
+                    if (previousLowTime > limit) {
+                        auto excess = previousLowTime - limit;
+                        previousPeriod -= excess;
+                    }
+                }
+            }
+            // for the current period, do the same, but shift the discarded bit to the previous period
+            if (currentPeriod > twoPeriods) {
+                auto limit = m_period;
+                if ((2 * m_dutyTime <= m_period)) {
                     // high period is fixed, low period adapts
                     if (currentHighTime > limit) {
                         auto excess = currentHighTime - limit;
-                        if (excess > previousPeriod) {
-                            previousHighTime = previousPeriod;
-                        } else if (!(excess < previousHighTime)) {
-                            previousHighTime = excess;
-                        }
-                        auto currentLowTime = currentPeriod - currentHighTime;
+
+                        previousHighTime += excess;
+                        previousPeriod += excess;
                         currentHighTime = limit;
-                        currentPeriod = currentLowTime + limit;
+                        currentPeriod -= excess;
                     }
                 } else {
                     // low period is fixed, high period adapts
                     auto currentLowTime = currentPeriod - currentHighTime;
                     if (currentLowTime > limit) {
                         auto excess = currentLowTime - limit;
-                        if (excess > previousPeriod) {
-                            previousHighTime = 0;
-                        } else if (excess < previousHighTime) {
-                            previousHighTime = previousPeriod - excess;
-                        }
-                        currentPeriod = currentHighTime + limit;
-                    }
-                }
-            }
-            // scenario 2: both periods combined are euqal to or longer than 2.5 * m_period
-            if (previousPeriod + currentPeriod > twoPeriods + (m_period >> 1)) {
-                // compress the previous period, limit length to current period length.
-                auto maxPeriod = std::max(currentPeriod, m_period);
-                if (previousPeriod > maxPeriod) {
-                    if (lastHistoricState == State::Active) {
-                        // limit low time of previous period (oldest history) to 3x current low time
-                        auto maxLowTime = 3 * (maxPeriod - currentHighTime);
-                        auto previousLowTime = previousPeriod - previousHighTime;
-                        if (previousLowTime > maxLowTime) {
-                            previousPeriod = previousHighTime + maxLowTime;
-                        }
-                    } else if (lastHistoricState == State::Inactive) {
-                        // limit high time of previous period (oldest history) to 3x current high time
-                        auto maxHighTime = 3 * (std::max(currentHighTime, m_dutyTime));
-                        if (previousHighTime > maxHighTime) {
-                            auto previousLowTime = previousPeriod - previousHighTime;
-                            previousHighTime = maxHighTime;
-                            previousPeriod = previousHighTime + previousLowTime;
-                        }
+
+                        previousPeriod += excess;
+                        currentPeriod -= excess;
                     }
                 }
             }
 
-            if (previousPeriod < m_period) {
+            // compress the previous period, limit length to 3*m_period, keep duty % equal
+            auto maxPeriod = 3 * m_period;
+            if (previousPeriod > maxPeriod) {
+                previousHighTime = uint64_t(previousHighTime) * uint64_t(maxPeriod) / previousPeriod;
+                previousPeriod = maxPeriod;
+            } else if (previousPeriod < m_period) {
                 // if previous period was shortened, lengthen it again with the state that would result it bringing duty closer to desired duty
                 auto shortenedBy = m_period - previousPeriod;
                 previousPeriod = m_period;
@@ -255,15 +242,16 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         auto twoPeriodHighTime = previousHighTime + currentHighTime;
 
         if (lastHistoricState == State::Active) {
-            if (m_dutySetting == maxDuty()) {
-                auto actWait = actPtr->desiredState(State::Active, now); // ensure desired state is correct
+            if (m_dutyTime == m_period) { // 100%
+                // ensure desired state is correct and get time from possibly blocked actuator
+                auto actWait = actPtr->desiredState(State::Active, now);
                 if (currentPeriod + 1000 <= m_period) {
-                    wait = m_period - currentPeriod; // runs from high to 1000
+                    wait = m_period - currentPeriod;
                 } else {
                     wait = 1000;
                 }
                 wait = std::max(actWait, wait);
-            } else if (m_dutySetting <= (maxDuty() >> 1)) {
+            } else if (2 * m_dutyTime <= m_period) {
                 // high period is fixed, low period adapts
                 if (currentHighTime < m_dutyTime) {
                     wait = m_dutyTime - currentHighTime;
@@ -306,15 +294,16 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             }
         } else if (lastHistoricState == State::Inactive) {
             auto currentLowTime = currentPeriod - currentHighTime;
-            if (m_dutySetting == value_t{0}) {
-                auto actWait = actPtr->desiredState(State::Inactive, now); // ensure desired state is correct
+            if (m_dutyTime == 0) {
+                // ensure desired state is correct and get time from possibly blocked actuator
+                auto actWait = actPtr->desiredState(State::Inactive, now);
                 if (currentPeriod + 1000 <= m_period) {
-                    wait = m_period - currentPeriod; // runs from high to 1000
+                    wait = m_period - currentPeriod;
                 } else {
                     wait = 1000;
                 }
                 wait = std::max(actWait, wait);
-            } else if (m_dutySetting > (maxDuty() >> 1)) {
+            } else if (2 * m_dutyTime > m_period) {
                 // low period is fixed, high period adapts
                 if (currentLowTime < invDutyTime) {
                     wait = invDutyTime - currentLowTime;
