@@ -152,7 +152,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
         // limit history length taken into account
         // special case for 0% and 100%, use fixed window of 2*m_period
         auto twoPeriods = 2 * m_period;
-        if (m_dutySetting == 0) {
+        if (m_dutyTime == 0) {
             auto previousLowTime = previousPeriod - previousHighTime;
             auto currentLowTime = currentPeriod - currentHighTime;
             if (currentPeriod < twoPeriods && currentPeriod + previousLowTime > twoPeriods) {
@@ -164,7 +164,7 @@ ActuatorPwm::slowPwmUpdate(const update_t& now)
             currentHighTime = twoPeriods - std::min(currentLowTime, twoPeriods);
             previousPeriod = 0;
             previousHighTime = 0;
-        } else if (m_dutySetting == maxDuty()) {
+        } else if (m_dutyTime == m_period) {
             if (currentPeriod < twoPeriods && currentPeriod + previousHighTime > twoPeriods) {
                 auto currentLowTime = currentPeriod - currentHighTime;
                 currentHighTime = std::min(currentHighTime + previousHighTime, twoPeriods - currentLowTime);

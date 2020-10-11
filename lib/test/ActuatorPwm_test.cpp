@@ -581,7 +581,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         pwm.update(now + 1);
         CHECK(mock.state() == State::Inactive);
     }
-    WHEN("the PWM actuator is set to 40% at startup, the duty cycle it reports doesn't overshoot more than 5%")
+    WHEN("the PWM actuator is set to 40% at startup")
     {
         pwm.setting(40);
         auto previous = pwm.value();
@@ -598,7 +598,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         REQUIRE(previous == Approx(40.0).margin(0.1));
     }
 
-    WHEN("the PWM actuator is set to 40% after being 10%, the achieved value increases to 40%")
+    WHEN("the PWM actuator is set to 40% after being 10%")
     {
         pwm.setting(10.0);
         auto changeSettingAt = 5 * pwm.period();
@@ -619,7 +619,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         REQUIRE(previous == Approx(40.0).margin(0.1));
     }
 
-    WHEN("the PWM actuator is set to 100% after being 10%, the achieved value increases to 100% in steps")
+    WHEN("the PWM actuator is set to 100% after being 10%")
     {
         pwm.setting(10.0);
         auto changeSettingAt = 5 * pwm.period();
@@ -640,7 +640,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         REQUIRE(previous == 100);
     }
 
-    WHEN("the PWM actuator is set to 90% after being 10%, the achieved value slowly transitions")
+    WHEN("the PWM actuator is set to 90% after being 10%")
     {
         pwm.setting(10.0);
         auto changeSettingAt = 5 * pwm.period();
@@ -661,7 +661,7 @@ SCENARIO("ActuatorPWM driving mock actuator", "[pwm]")
         REQUIRE(previous == Approx(90).margin(0.1));
     }
 
-    WHEN("the PWM actuator is set to 0% after being 100%, the achieved value transitions from 33% to 0%")
+    WHEN("the PWM actuator is set to 0% after being 100%")
     {
         // run at 50% for a while first to have some cycle history, end on a high output
         pwm.setting(50.0);
