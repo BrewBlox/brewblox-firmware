@@ -6,6 +6,8 @@ resources:
       image: brewblox/firmware-compiler:latest
     - container: simulator-compiler
       image: brewblox/simulator-compiler:latest
+    - container: idf
+      image: espressif/idf:latest
 
 pool:
   vmImage: "Ubuntu-20.04"
@@ -170,6 +172,38 @@ jobs:
 
       - publish: build/target/brewblox-photon
         artifact: Photon
+
+  #########################################################
+  # Build ESP32
+  #########################################################
+  - job: BuildESP32
+    condition: false
+
+    steps:
+      - checkout: self
+
+      - script: git submodule update --init --recursive --depth 1
+        displayName: Checkout submodules
+
+      - script: bash build/compile-proto.sh
+        target: firmware-compiler
+        displayName: Compile proto
+
+      - script: idf.py build
+        target: idf
+        workingDirectory: app/brewblox-esp
+        displayName: Build ESP32
+      
+      - bash: |
+          mkdir ./ci
+          cp ./brewblox_esp.bin ./ci/brewblox-esp32.bin
+          cp ./bootloader/bootloader.bin ./ci/bootloader-esp32.bin
+          cp ./partition_table/partition-table.bin ./ci/partition-table-esp32.bin
+        workingDirectory: app/brewblox-esp/build
+        displayName: Export build variables
+
+      - publish: app/brewblox-esp/build/ci
+        artifact: ESP32
 
   #########################################################
   # Deploy
