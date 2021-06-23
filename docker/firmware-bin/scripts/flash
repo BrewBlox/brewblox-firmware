@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 set -e
 
-function flash() {
+function flash-particle() {
     particle flash --usb --yes "$1"
 }
 
@@ -21,11 +21,11 @@ fi
 if [[ -n $(lsusb -d 2b04:d006) ]]; then
     echo "Flashing Photon..."
     echo "Flashing System 1 file..."
-    flash system-part1-photon.bin
+    flash-particle system-part1-photon.bin
     echo "Flashing System 2 file..."
-    flash system-part2-photon.bin
+    flash-particle system-part2-photon.bin
     echo "Flashing Firmware file..."
-    flash brewblox-photon.bin
+    flash-particle brewblox-photon.bin
     notify
     sleep 5
     exit
@@ -34,31 +34,18 @@ fi
 if [[ -n $(lsusb -d 2b04:d008) ]]; then
     echo "Flashing P1..."
     echo -n "Flashing System 1 file..."
-    flash system-part1-p1.bin
+    flash-particle system-part1-p1.bin
     echo -n "Flashing System 2 file..."
-    flash system-part2-p1.bin
+    flash-particle system-part2-p1.bin
     echo -n "Flashing Firmware file..."
-    flash brewblox-p1.bin
+    flash-particle brewblox-p1.bin
     notify
     sleep 5
     exit
 fi
 
 if [[ -n $(lsusb -d 10c4:ea60) ]]; then
-    echo "Flashing ESP32..."
-    esptool.py \
-        --baud 460800 \
-        --before default_reset \
-        --after hard_reset \
-        --chip esp32 \
-        write_flash \
-        --flash_mode dio \
-        --flash_size detect \
-        --flash_freq 40m \
-        0x1000 ./bootloader-esp32.bin \
-        0x8000 ./partition-table-esp32.bin \
-        0x10000 ./brewblox-esp32.bin
-    echo "Your firmware has been updated."
+    ./flash-esp
     sleep 5
     exit
 fi
